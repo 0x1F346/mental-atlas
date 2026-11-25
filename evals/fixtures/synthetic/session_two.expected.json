@@ -31,7 +31,7 @@
      "evidence": [["s5b", "explicit", "supports"]]},
     {"key": "never_complain", "type": "belief", "name": "A real job is one where you never complain", "match": ["never complain", "real job"], "status": "stated", "home": "work", "weights": {"work": 0.5, "family": 0.5},
      "evidence": [["s7", "explicit", "supports"], ["s9a", "explicit", "supports"]]},
-    {"key": "safe", "type": "need", "name": "to feel safe to say when something is wrong", "match": ["safe"], "status": "stated", "home": "self", "weights": {"self": 0.5, "work": 0.5},
+    {"key": "safe", "type": "need", "name": "to feel safe to say when something is wrong", "match": ["safe"], "status": "stated", "home": "self", "weights": {"self": 0.6, "work": 0.4},
      "evidence": [["s9b", "explicit", "supports"]]},
     {"key": "need_is_weakness", "type": "belief", "name": "Needing to feel safe is a weakness", "match": ["weakness"], "status": "observed", "home": "self", "weights": {"self": 1.0},
      "evidence": [["s10", "explicit", "supports"]]},

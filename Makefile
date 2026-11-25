@@ -1,4 +1,4 @@
-.PHONY: e2e dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
+.PHONY: eval-fake e2e dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
 
 BACKEND := backend
 WEB := web
@@ -60,7 +60,12 @@ test:
 e2e:
 	cd $(WEB) && pnpm e2e
 
+# Live extraction scorecard. Calls the paid model: ask the owner first.
 eval:
-	@echo "no evaluation harness yet (M3-T2)"
+	cd $(BACKEND) && uv run python ../evals/run_eval.py --providers live
+
+# The same scorecard with each fixture's expected output replayed. No outside call.
+eval-fake:
+	cd $(BACKEND) && uv run python ../evals/run_eval.py --providers oracle --no-history
 
 verify: lint types test generate-check
