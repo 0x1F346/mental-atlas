@@ -54,3 +54,24 @@ Entry format:
 - Reason: Constraints and the extraction schema need closed sets. Each set has an escape value or is optional, so nothing the plan describes is excluded.
 - Alternatives considered: Free-text fields; rejected because they cannot be checked.
 - Approved by owner: not needed for creating version 1 from the plan; the owner should review these values, and any later change needs approval.
+
+## D-007 (2026-11-25) Computed fields: details the plan left open
+- Context: The plan defines `noticed_by` and `status` from explicit and implied links but does not say how a contradicting link, a third speaker, confidence or life-area weights are treated.
+- Decision: Only a supporting explicit link counts as the speaker naming the thing; an explicit contradiction (a denial) adds nobody to `noticed_by`. An explicit link from a speaker with role `other` adds nobody. Node and relationship confidence is the highest confidence among supporting links. Each evidence link stores the life-area weights its mention gave (`evidence.life_area_weights`); a node's weights are the normalised average of those, so they can be recomputed after a retraction.
+- Reason: A denial is the opposite of noticing, and marking it `stated` would hide exactly the gap three of the owner's questions ask about. Weights must be re-derivable for retraction to stay exact.
+- Alternatives considered: Counting any explicit link as naming it.
+- Approved by owner: not needed
+
+## D-008 (2026-11-25) What retraction deletes and what it marks
+- Context: Design rule 3 says retracting a run removes exactly what it wrote, M1 requires a test graph to be retracted "with nothing left behind", and M3 requires reprocessing to leave identical row counts. The ingestion section says a node left with no evidence is marked `retracted`.
+- Decision: Retracting a run deletes the rows that run wrote: its statements, evidence, aliases, match decisions, and any node or relationship it created that has no evidence left. A node or relationship created by a different run that loses its last evidence is marked `retracted`, not deleted. A surviving node whose creating run is retracted is re-attributed to the run of its earliest remaining evidence. Nodes the system creates (the owner's Person node, the therapist) have no run and are never retracted. Retracting a source deletes the source row and everything that hangs from it, and returns the storage keys to delete.
+- Reason: This satisfies the three exactness requirements and still uses the `retracted` state where a row belongs to another run's history.
+- Alternatives considered: Marking everything `retracted`; rejected because reprocessing would then grow the tables.
+- Approved by owner: not needed
+
+## D-009 (2026-11-25) Accounts and sign-in tables
+- Context: The plan asks for server-side sessions and row-level security on every table, but sign-in has to find a user before any user is set.
+- Decision: A `sessions` table holds a hash of each cookie token. Two `SECURITY DEFINER` functions, `atlas_login_lookup` and `atlas_session_lookup`, are the only way to read across users, and each returns one exact match. The seeded user has an unusable password until `python -m atlas.cli set-password` is run.
+- Reason: Keeps the application role unable to bypass row-level security while still allowing sign-in.
+- Alternatives considered: A second, privileged database role for the API.
+- Approved by owner: not needed
