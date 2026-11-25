@@ -40,3 +40,10 @@ Entry format:
 - Reason: The block must hold when a session starts in a subdirectory. The Bash patterns are best-effort; a script that opens the file itself is not caught, so rule 10 in `CLAUDE.md` still applies.
 - Alternatives considered: Sandboxing; left for the owner.
 - Approved by owner: yes
+
+## D-005 (2026-11-25) Local development topology and MinIO image
+- Context: The plan asks for Docker Compose with Postgres plus pgvector and MinIO, and `make dev` starting the API, worker and web app. `minio/minio` is no longer pullable from Docker Hub or Quay.
+- Decision: Compose runs only Postgres (`pgvector/pgvector:pg17`) and MinIO (`cgr.dev/chainguard/minio`). `make dev` starts them, applies migrations, then runs the API, worker and web app on the host. Postgres listens on host port 54329 and MinIO on 9100 to avoid clashing with local services. An init script creates the `atlas_app` role (no superuser, no BYPASSRLS) and an `atlas_test` database.
+- Reason: Host processes reload quickly and need no image builds; container images for the app are M6-T1 work. The Chainguard build keeps MinIO as planned.
+- Alternatives considered: Running everything in Compose; another S3-compatible server (SeaweedFS, RustFS).
+- Approved by owner: not needed
