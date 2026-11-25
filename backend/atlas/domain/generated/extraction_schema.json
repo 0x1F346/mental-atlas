@@ -1,0 +1,514 @@
+{
+  "vocabulary_version": 1,
+  "record_statements": {
+    "name": "record_statements",
+    "description": "Record the statements found in the current window of the transcript.",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statements"
+      ],
+      "properties": {
+        "statements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "segment",
+              "quote",
+              "text",
+              "kind"
+            ],
+            "properties": {
+              "segment": {
+                "type": "string",
+                "description": "The id of the segment the quote comes from."
+              },
+              "quote": {
+                "type": "string",
+                "description": "A verbatim excerpt of that segment, copied exactly."
+              },
+              "text": {
+                "type": "string",
+                "description": "The same claim restated so it makes sense on its own."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "report",
+                  "feeling",
+                  "reflection",
+                  "intention",
+                  "observation"
+                ]
+              },
+              "about_time_text": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "When the thing described happened, in the speaker's words."
+              },
+              "about_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date, start of that period, if it can be resolved."
+              },
+              "about_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date, end of that period, if it can be resolved."
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "record_concepts": {
+    "name": "record_concepts",
+    "description": "Record the concepts and relationships supported by the statements in the current window.",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "concepts",
+        "relationships",
+        "unsorted"
+      ],
+      "properties": {
+        "concepts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "type",
+              "name",
+              "description",
+              "life_area_weights",
+              "evidence"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string",
+                "description": "A handle for this mention, unique in this call, such as c1."
+              },
+              "existing_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The id of a shortlisted concept this mention is the same as, or null for a new concept."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "person",
+                  "group",
+                  "situation",
+                  "event",
+                  "feeling",
+                  "sensation",
+                  "belief",
+                  "behaviour",
+                  "need",
+                  "value",
+                  "goal",
+                  "trait",
+                  "role"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "description": "One short sentence."
+              },
+              "kind": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "coping_tool",
+                  "diagnosis",
+                  "employer",
+                  "family",
+                  "friend_circle",
+                  "other",
+                  "physical",
+                  "strength",
+                  null
+                ]
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "relationship_to_owner": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Person only. How this person relates to the owner, in the owner's words."
+                  },
+                  "is_self": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ],
+                    "description": "Person only. True only for the owner's own Person node."
+                  },
+                  "start": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Situation only. When the situation began"
+                  },
+                  "end": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Situation only. When the situation ended"
+                  },
+                  "when": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Event only. The date of the occasion"
+                  },
+                  "precision": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "day",
+                      "month",
+                      "year",
+                      "approximate",
+                      "unknown",
+                      null
+                    ],
+                    "description": "Event only. How precise `when` is."
+                  },
+                  "occurrence": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "happened",
+                      "planned",
+                      null
+                    ],
+                    "description": "Event only. Whether the occasion has happened or is planned."
+                  },
+                  "body_area": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Sensation only. Where in the body it is felt."
+                  },
+                  "progress": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "open",
+                      "reached",
+                      "dropped",
+                      null
+                    ],
+                    "description": "Goal only. Where the goal stands."
+                  }
+                }
+              },
+              "life_area_weights": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "love",
+                  "family",
+                  "friendships",
+                  "work",
+                  "body_health",
+                  "self"
+                ],
+                "properties": {
+                  "love": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "family": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "friendships": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "work": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "body_health": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "self": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "description": "How much this concept belongs to each life area. Should sum to 1."
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "statement",
+                    "stance",
+                    "basis"
+                  ],
+                  "properties": {
+                    "statement": {
+                      "type": "string",
+                      "description": "The id of a statement in this window."
+                    },
+                    "stance": {
+                      "type": "string",
+                      "enum": [
+                        "supports",
+                        "contradicts"
+                      ]
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "explicit",
+                        "implied"
+                      ],
+                      "description": "explicit only when the speaker named the thing; otherwise implied."
+                    }
+                  }
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "from",
+              "to",
+              "evidence"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "LED_TO",
+                  "OCCURRED_IN",
+                  "ABOUT",
+                  "CAME_FROM",
+                  "HOLDS",
+                  "HAS",
+                  "BELONGS_TO",
+                  "INVOLVES",
+                  "PART_OF",
+                  "SERVES",
+                  "HELPS",
+                  "BLOCKS",
+                  "CONFLICTS_WITH"
+                ]
+              },
+              "from": {
+                "type": "string",
+                "description": "A concept ref from this call, or the id of a shortlisted concept."
+              },
+              "to": {
+                "type": "string",
+                "description": "A concept ref from this call, or the id of a shortlisted concept."
+              },
+              "context_event": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The Event it happened in, as a ref or id, when known."
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "OCCURRED_IN only. Position within the event"
+                  }
+                }
+              },
+              "valid_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date from which it held, when a statement gives one."
+              },
+              "valid_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date until which it held, as in 'I used to believe'."
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "statement",
+                    "stance",
+                    "basis"
+                  ],
+                  "properties": {
+                    "statement": {
+                      "type": "string",
+                      "description": "The id of a statement in this window."
+                    },
+                    "stance": {
+                      "type": "string",
+                      "enum": [
+                        "supports",
+                        "contradicts"
+                      ]
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "explicit",
+                        "implied"
+                      ],
+                      "description": "explicit only when the speaker named the thing; otherwise implied."
+                    }
+                  }
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "unsorted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description",
+              "suggested_type",
+              "reason",
+              "evidence"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "suggested_type": {
+                "type": "string",
+                "description": "The type you would have used if one fitted."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why no existing type fits."
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "statement",
+                    "stance",
+                    "basis"
+                  ],
+                  "properties": {
+                    "statement": {
+                      "type": "string",
+                      "description": "The id of a statement in this window."
+                    },
+                    "stance": {
+                      "type": "string",
+                      "enum": [
+                        "supports",
+                        "contradicts"
+                      ]
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "explicit",
+                        "implied"
+                      ],
+                      "description": "explicit only when the speaker named the thing; otherwise implied."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

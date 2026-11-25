@@ -27,10 +27,10 @@ migrate:
 	@echo "no migrations yet (M1-T3)"
 
 generate:
-	@echo "no generator yet (M1-T2)"
+	cd $(BACKEND) && uv run python ../ontology/generate.py
 
 generate-check:
-	@echo "no generator yet (M1-T2)"
+	cd $(BACKEND) && uv run python ../ontology/generate.py --check
 
 lint:
 	cd $(BACKEND) && uv run ruff check . && uv run ruff format --check .
