@@ -7,6 +7,7 @@ from collections.abc import Iterator
 TEST_DB = "localhost:54329/atlas_test"
 os.environ["ATLAS_ENVIRONMENT"] = "test"
 os.environ["ATLAS_PROVIDERS"] = "fake"
+os.environ["ATLAS_BLOB_STORE"] = "memory"
 os.environ["ATLAS_DATABASE_URL"] = f"postgresql+psycopg://atlas_app:atlas_app@{TEST_DB}"
 os.environ["ATLAS_DATABASE_OWNER_URL"] = f"postgresql+psycopg://atlas_owner:atlas_owner@{TEST_DB}"
 
