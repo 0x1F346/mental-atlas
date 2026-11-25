@@ -12,6 +12,7 @@ infra:
 	docker compose up -d --wait
 
 dev: infra migrate
+	cd $(BACKEND) && uv run python -m atlas.cli dev-password
 	$(MAKE) -j3 api worker web
 
 api:
