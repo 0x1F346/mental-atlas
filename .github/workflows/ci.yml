@@ -33,3 +33,7 @@ jobs:
         run: make infra
       - name: Verify
         run: make verify
+      - name: Install the browser for the end-to-end test
+        run: cd web && pnpm exec playwright install --with-deps chromium
+      - name: End-to-end test (fake providers)
+        run: make e2e
