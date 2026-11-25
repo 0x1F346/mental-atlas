@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/edges/{edge_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Edge Evidence
+         * @description The quotes behind a relationship.
+         */
+        get: operations["edge_evidence_api_v1_edges__edge_id__evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -72,6 +92,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Map
+         * @description Regions as polygons and landmarks as points. Unsorted items are kept off the map.
+         */
+        get: operations["get_map_api_v1_map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/{media_id}/link": {
         parameters: {
             query?: never;
@@ -81,6 +121,46 @@ export interface paths {
         };
         /** Media Link */
         get: operations["media_link_api_v1_media__media_id__link_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nodes/{node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Node
+         * @description One concept with its neighbours.
+         */
+        get: operations["get_node_api_v1_nodes__node_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nodes/{node_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Node Evidence
+         * @description The quotes behind a concept.
+         */
+        get: operations["node_evidence_api_v1_nodes__node_id__evidence_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -216,12 +296,147 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
+        /**
+         * EvidenceBasis
+         * @description How directly the statement names the thing.
+         * @enum {string}
+         */
+        EvidenceBasis: "explicit" | "implied";
+        /** EvidenceItem */
+        EvidenceItem: {
+            /** Audio Media Id */
+            audio_media_id: string | null;
+            basis: components["schemas"]["EvidenceBasis"];
+            /** End Ms */
+            end_ms: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["StatementKind"];
+            /** Quote */
+            quote: string;
+            /**
+             * Said At
+             * Format: date-time
+             */
+            said_at: string;
+            /**
+             * Segment Id
+             * Format: uuid
+             */
+            segment_id: string;
+            /**
+             * Source Id
+             * Format: uuid
+             */
+            source_id: string;
+            /**
+             * Source Occurred At
+             * Format: date-time
+             */
+            source_occurred_at: string;
+            /** Source Title */
+            source_title: string;
+            speaker_role: components["schemas"]["SpeakerRole"];
+            stance: components["schemas"]["EvidenceStance"];
+            /** Start Ms */
+            start_ms: number | null;
+            /**
+             * Statement Id
+             * Format: uuid
+             */
+            statement_id: string;
+            /** Text */
+            text: string;
+        };
+        /** EvidenceOut */
+        EvidenceOut: {
+            /** Is Hypothesis */
+            is_hypothesis: boolean;
+            /** Items */
+            items: components["schemas"]["EvidenceItem"][];
+            status: components["schemas"]["Status"];
+            /** Status Line */
+            status_line: string;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /**
+             * Target Kind
+             * @enum {string}
+             */
+            target_kind: "node" | "edge";
+            /** Title */
+            title: string;
+        };
+        /**
+         * EvidenceStance
+         * @description Whether a statement backs or disputes the thing it is linked to.
+         * @enum {string}
+         */
+        EvidenceStance: "supports" | "contradicts";
+        /** Landmark */
+        Landmark: {
+            /** Evidence Count */
+            evidence_count: number;
+            /** First Seen At */
+            first_seen_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Hypothesis */
+            is_hypothesis: boolean;
+            /** Is Self */
+            is_self: boolean;
+            /** Kind */
+            kind: string | null;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            life_area: components["schemas"]["LifeArea"];
+            /** Name */
+            name: string;
+            /** Noticed By */
+            noticed_by: components["schemas"]["NoticedBy"][];
+            /** Source Ids */
+            source_ids: string[];
+            status: components["schemas"]["Status"];
+            /** Status Line */
+            status_line: string;
+            type: components["schemas"]["NodeType"];
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * LifeArea
+         * @description The six fixed regions of the map, clockwise from the top, with Self at the centre.
+         * @enum {string}
+         */
+        LifeArea: "love" | "family" | "friendships" | "work" | "body_health" | "self";
         /** LoginRequest */
         LoginRequest: {
             /** Email */
             email: string;
             /** Password */
             password: string;
+        };
+        /** MapDocument */
+        MapDocument: {
+            /** Landmarks */
+            landmarks: components["schemas"]["Landmark"][];
+            /** Layout Version */
+            layout_version: number;
+            /** Regions */
+            regions: components["schemas"]["Region"][];
+            /** Size */
+            size: number;
         };
         /** Me */
         Me: {
@@ -244,6 +459,121 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** NodeDetail */
+        NodeDetail: {
+            /** Aliases */
+            aliases: string[];
+            /** Attributes */
+            attributes: {
+                [key: string]: unknown;
+            };
+            /** Description */
+            description: string | null;
+            /** Evidence Count */
+            evidence_count: number;
+            /** First Seen At */
+            first_seen_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Hypothesis */
+            is_hypothesis: boolean;
+            /** Is Self */
+            is_self: boolean;
+            /** Kind */
+            kind: string | null;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            life_area: components["schemas"]["LifeArea"];
+            /** Name */
+            name: string;
+            /** Noticed By */
+            noticed_by: components["schemas"]["NoticedBy"][];
+            /** Relationships */
+            relationships: components["schemas"]["RelationshipOut"][];
+            status: components["schemas"]["Status"];
+            /** Status Line */
+            status_line: string;
+            type: components["schemas"]["NodeType"];
+        };
+        /** NodeSummary */
+        NodeSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Hypothesis */
+            is_hypothesis: boolean;
+            /** Kind */
+            kind: string | null;
+            /** Name */
+            name: string;
+            status: components["schemas"]["Status"];
+            /** Status Line */
+            status_line: string;
+            type: components["schemas"]["NodeType"];
+        };
+        /**
+         * NodeType
+         * @enum {string}
+         */
+        NodeType: "person" | "group" | "situation" | "event" | "feeling" | "sensation" | "belief" | "behaviour" | "need" | "value" | "goal" | "trait" | "role" | "pattern" | "tension" | "blind_spot" | "unsorted";
+        /**
+         * NoticedBy
+         * @description Who has noticed a node or relationship. Computed from evidence, never set by hand.
+         * @enum {string}
+         */
+        NoticedBy: "self" | "therapist" | "ai";
+        /** Region */
+        Region: {
+            /** Anchor */
+            anchor: [
+                number,
+                number
+            ];
+            key: components["schemas"]["LifeArea"];
+            /** Name */
+            name: string;
+            /** Polygon */
+            polygon: [
+                number,
+                number
+            ][];
+        };
+        /** RelationshipOut */
+        RelationshipOut: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "out" | "in";
+            /**
+             * Edge Id
+             * Format: uuid
+             */
+            edge_id: string;
+            /** Evidence Count */
+            evidence_count: number;
+            /** Is Hypothesis */
+            is_hypothesis: boolean;
+            other: components["schemas"]["NodeSummary"];
+            status: components["schemas"]["Status"];
+            /** Status Line */
+            status_line: string;
+            type: components["schemas"]["RelationshipType"];
+            /** Valid From */
+            valid_from: string | null;
+            /** Valid To */
+            valid_to: string | null;
+        };
+        /**
+         * RelationshipType
+         * @enum {string}
+         */
+        RelationshipType: "LED_TO" | "OCCURRED_IN" | "ABOUT" | "CAME_FROM" | "HOLDS" | "HAS" | "BELONGS_TO" | "INVOLVES" | "PART_OF" | "SERVES" | "HELPS" | "BLOCKS" | "CONFLICTS_WITH" | "SEEN_IN" | "HAS_STEP" | "BETWEEN" | "CONCERNS";
         /** ReprocessRequest */
         ReprocessRequest: {
             stage: components["schemas"]["Stage"];
@@ -388,6 +718,18 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * StatementKind
+         * @description What sort of thing a statement is.
+         * @enum {string}
+         */
+        StatementKind: "report" | "feeling" | "reflection" | "intention" | "observation";
+        /**
+         * Status
+         * @description How well established a node or relationship is. Computed from evidence, never set by hand.
+         * @enum {string}
+         */
+        Status: "stated" | "observed" | "hypothesis";
         /** TranscriptOut */
         TranscriptOut: {
             /** Segments */
@@ -514,6 +856,37 @@ export interface operations {
             };
         };
     };
+    edge_evidence_api_v1_edges__edge_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceOut"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -545,6 +918,35 @@ export interface operations {
             };
         };
     };
+    get_map_api_v1_map_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapDocument"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     media_link_api_v1_media__media_id__link_get: {
         parameters: {
             query?: never;
@@ -563,6 +965,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaLink"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_node_api_v1_nodes__node_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeDetail"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    node_evidence_api_v1_nodes__node_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceOut"];
                 };
             };
             /** @description Client Error */

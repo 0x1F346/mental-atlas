@@ -1,9 +1,9 @@
 # Progress
 
 ## Now
-- Milestone: M4 Map layout and read API
-- Current task: M4-T1
-- Next step: Region shapes with seeded borders.
+- Milestone: M5 Web map
+- Current task: M5-T1
+- Next step: MapRenderer with regions, landmarks, zoom levels and labels.
 - Blocked on: nothing for M4 and M5. The owner must run `make eval` (paid) to close M3, see D-015.
 
 ## Milestones
@@ -11,18 +11,18 @@
 - [x] M1 Vocabulary and database
 - [x] M2 Ingestion
 - [ ] M3 Extraction (built and merged; live scorecard not yet run, see D-015)
-- [ ] M4 Map layout and read API
+- [x] M4 Map layout and read API
 - [ ] M5 Web map
 - [ ] M6 First real session
 
 ## Tasks in the current milestone
-- [ ] M4-T1: Region shapes with seeded borders, stored as layout version 1.
-- [ ] M4-T2: The placement algorithm, with tests for determinism, no overlaps and pinned existing landmarks.
-- [ ] M4-T3: The layout stage in the pipeline.
-- [ ] M4-T4: `GraphStore` with an in-memory implementation.
-- [ ] M4-T5: `GET /map`, the node and evidence endpoints, and the media link.
+- [ ] M5-T1: `MapRenderer` with regions, landmarks, zoom levels and labels.
+- [ ] M5-T2: Type icons, size, fade, status outlines and a legend.
+- [ ] M5-T3: Selection, neighbour lines, the evidence panel, audio playback from a quote, and the transcript link.
+- [ ] M5-T4: Filters.
+- [ ] M5-T5: A Playwright test that signs in, uploads fixture text, waits for `ready`, opens the map, selects a landmark and reads a quote.
 
-Done when every active concept from the fixtures sits inside its home region, and adding a second source moves no existing landmark.
+Done when the Playwright test passes and every hypothesis shows its label in the panel.
 
 ## Milestone reports
 ### M0 Foundations (2026-11-25)
@@ -50,15 +50,22 @@ Done when every active concept from the fixtures sits inside its home region, an
 - Never exercised against a live service: the Claude adapter, all four prompts, the ElevenLabs adapter, a hosted embedding model.
 - `make verify`: 139 backend tests and 2 web tests passed.
 
+### M4 Map layout and read API (2026-11-25)
+- "Every active concept from the fixtures sits inside its home region": `test_every_active_concept_sits_inside_its_home_region` passes over all three fixtures, with no two landmarks closer than the minimum gap and the owner at the centre.
+- "Adding a second source moves no existing landmark": `test_adding_a_second_source_moves_no_existing_landmark` passes (a landmark moves only if its home area changed).
+- Also checked: placement is deterministic, reprocessing puts concepts back where they were, unsorted and retracted concepts are off the map, every hypothesis in the API carries its label.
+- `make verify`: 161 backend tests and 2 web tests passed.
+
 ## Session log (newest first, keep the last 10)
 ### 2026-11-25
-- Done: M3-T1 to M3-T8 (see the M3 report for what is unverified). Decisions D-011 to D-015.
+- Done: M4-T1 to M4-T5. Geometry, placement, layout stage, GraphStore, map and evidence endpoints.
+- Done earlier the same day: M3-T1 to M3-T8 (see the M3 report for what is unverified). Decisions D-011 to D-015.
 - Done earlier the same day: M2-T1 to M2-T8. Providers and fakes, job queue and worker, source API, media, ElevenLabs adapter, text path, speaker roles, web pages, Playwright. Decision D-010.
 - Done earlier the same day: M1-T1 to M1-T7. Vocabulary v1, generator, initial migration with row-level security, session helper, rules module, retraction, sign-in. Decisions D-006 to D-009.
 - Done earlier the same day: M0-T1 to M0-T5. Memory setup, repository skeleton, Compose with Postgres plus pgvector and MinIO, typed settings, content-safe logging, CI workflow. Decisions D-001 to D-005.
 - Verified by: `make verify` (all passed) and a `make dev` smoke check with curl.
 - Unfinished: nothing in M0.
-- Next: M4-T1.
+- Next: M5-T1.
 
 ## Known issues
 - M3's live scorecard has not been run (D-015). No prompt has been run against a live model.

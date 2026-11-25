@@ -42,6 +42,315 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "EvidenceBasis": {
+        "description": "How directly the statement names the thing.",
+        "enum": [
+          "explicit",
+          "implied"
+        ],
+        "title": "EvidenceBasis",
+        "type": "string"
+      },
+      "EvidenceItem": {
+        "properties": {
+          "audio_media_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Media Id"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/EvidenceBasis"
+          },
+          "end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Ms"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/StatementKind"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "said_at": {
+            "format": "date-time",
+            "title": "Said At",
+            "type": "string"
+          },
+          "segment_id": {
+            "format": "uuid",
+            "title": "Segment Id",
+            "type": "string"
+          },
+          "source_id": {
+            "format": "uuid",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_occurred_at": {
+            "format": "date-time",
+            "title": "Source Occurred At",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "speaker_role": {
+            "$ref": "#/components/schemas/SpeakerRole"
+          },
+          "stance": {
+            "$ref": "#/components/schemas/EvidenceStance"
+          },
+          "start_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Ms"
+          },
+          "statement_id": {
+            "format": "uuid",
+            "title": "Statement Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stance",
+          "basis",
+          "statement_id",
+          "quote",
+          "text",
+          "kind",
+          "speaker_role",
+          "said_at",
+          "start_ms",
+          "end_ms",
+          "segment_id",
+          "source_id",
+          "source_title",
+          "source_occurred_at",
+          "audio_media_id"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "EvidenceOut": {
+        "properties": {
+          "is_hypothesis": {
+            "title": "Is Hypothesis",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "status_line": {
+            "title": "Status Line",
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_kind": {
+            "enum": [
+              "node",
+              "edge"
+            ],
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_kind",
+          "target_id",
+          "title",
+          "status",
+          "status_line",
+          "is_hypothesis",
+          "items"
+        ],
+        "title": "EvidenceOut",
+        "type": "object"
+      },
+      "EvidenceStance": {
+        "description": "Whether a statement backs or disputes the thing it is linked to.",
+        "enum": [
+          "supports",
+          "contradicts"
+        ],
+        "title": "EvidenceStance",
+        "type": "string"
+      },
+      "Landmark": {
+        "properties": {
+          "evidence_count": {
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_hypothesis": {
+            "title": "Is Hypothesis",
+            "type": "boolean"
+          },
+          "is_self": {
+            "title": "Is Self",
+            "type": "boolean"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "life_area": {
+            "$ref": "#/components/schemas/LifeArea"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "noticed_by": {
+            "items": {
+              "$ref": "#/components/schemas/NoticedBy"
+            },
+            "title": "Noticed By",
+            "type": "array"
+          },
+          "source_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "status_line": {
+            "title": "Status Line",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NodeType"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "kind",
+          "name",
+          "x",
+          "y",
+          "life_area",
+          "status",
+          "status_line",
+          "is_hypothesis",
+          "noticed_by",
+          "evidence_count",
+          "first_seen_at",
+          "last_seen_at",
+          "is_self",
+          "source_ids"
+        ],
+        "title": "Landmark",
+        "type": "object"
+      },
+      "LifeArea": {
+        "description": "The six fixed regions of the map, clockwise from the top, with Self at the centre.",
+        "enum": [
+          "love",
+          "family",
+          "friendships",
+          "work",
+          "body_health",
+          "self"
+        ],
+        "title": "LifeArea",
+        "type": "string"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -58,6 +367,40 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "MapDocument": {
+        "properties": {
+          "landmarks": {
+            "items": {
+              "$ref": "#/components/schemas/Landmark"
+            },
+            "title": "Landmarks",
+            "type": "array"
+          },
+          "layout_version": {
+            "title": "Layout Version",
+            "type": "integer"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/Region"
+            },
+            "title": "Regions",
+            "type": "array"
+          },
+          "size": {
+            "title": "Size",
+            "type": "number"
+          }
+        },
+        "required": [
+          "layout_version",
+          "size",
+          "regions",
+          "landmarks"
+        ],
+        "title": "MapDocument",
         "type": "object"
       },
       "Me": {
@@ -106,6 +449,368 @@
         ],
         "title": "MediaLink",
         "type": "object"
+      },
+      "NodeDetail": {
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "title": "Attributes",
+            "type": "object"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "evidence_count": {
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_hypothesis": {
+            "title": "Is Hypothesis",
+            "type": "boolean"
+          },
+          "is_self": {
+            "title": "Is Self",
+            "type": "boolean"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "life_area": {
+            "$ref": "#/components/schemas/LifeArea"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "noticed_by": {
+            "items": {
+              "$ref": "#/components/schemas/NoticedBy"
+            },
+            "title": "Noticed By",
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipOut"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "status_line": {
+            "title": "Status Line",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NodeType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "kind",
+          "name",
+          "status",
+          "status_line",
+          "is_hypothesis",
+          "description",
+          "attributes",
+          "aliases",
+          "life_area",
+          "noticed_by",
+          "evidence_count",
+          "first_seen_at",
+          "last_seen_at",
+          "is_self",
+          "relationships"
+        ],
+        "title": "NodeDetail",
+        "type": "object"
+      },
+      "NodeSummary": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_hypothesis": {
+            "title": "Is Hypothesis",
+            "type": "boolean"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "status_line": {
+            "title": "Status Line",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NodeType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "kind",
+          "name",
+          "status",
+          "status_line",
+          "is_hypothesis"
+        ],
+        "title": "NodeSummary",
+        "type": "object"
+      },
+      "NodeType": {
+        "enum": [
+          "person",
+          "group",
+          "situation",
+          "event",
+          "feeling",
+          "sensation",
+          "belief",
+          "behaviour",
+          "need",
+          "value",
+          "goal",
+          "trait",
+          "role",
+          "pattern",
+          "tension",
+          "blind_spot",
+          "unsorted"
+        ],
+        "title": "NodeType",
+        "type": "string"
+      },
+      "NoticedBy": {
+        "description": "Who has noticed a node or relationship. Computed from evidence, never set by hand.",
+        "enum": [
+          "self",
+          "therapist",
+          "ai"
+        ],
+        "title": "NoticedBy",
+        "type": "string"
+      },
+      "Region": {
+        "properties": {
+          "anchor": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Anchor",
+            "type": "array"
+          },
+          "key": {
+            "$ref": "#/components/schemas/LifeArea"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "polygon": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Polygon",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "anchor",
+          "polygon"
+        ],
+        "title": "Region",
+        "type": "object"
+      },
+      "RelationshipOut": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "out",
+              "in"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "edge_id": {
+            "format": "uuid",
+            "title": "Edge Id",
+            "type": "string"
+          },
+          "evidence_count": {
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "is_hypothesis": {
+            "title": "Is Hypothesis",
+            "type": "boolean"
+          },
+          "other": {
+            "$ref": "#/components/schemas/NodeSummary"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "status_line": {
+            "title": "Status Line",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RelationshipType"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "edge_id",
+          "type",
+          "direction",
+          "status",
+          "status_line",
+          "is_hypothesis",
+          "evidence_count",
+          "valid_from",
+          "valid_to",
+          "other"
+        ],
+        "title": "RelationshipOut",
+        "type": "object"
+      },
+      "RelationshipType": {
+        "enum": [
+          "LED_TO",
+          "OCCURRED_IN",
+          "ABOUT",
+          "CAME_FROM",
+          "HOLDS",
+          "HAS",
+          "BELONGS_TO",
+          "INVOLVES",
+          "PART_OF",
+          "SERVES",
+          "HELPS",
+          "BLOCKS",
+          "CONFLICTS_WITH",
+          "SEEN_IN",
+          "HAS_STEP",
+          "BETWEEN",
+          "CONCERNS"
+        ],
+        "title": "RelationshipType",
+        "type": "string"
       },
       "ReprocessRequest": {
         "properties": {
@@ -527,6 +1232,28 @@
         "title": "StageOut",
         "type": "object"
       },
+      "StatementKind": {
+        "description": "What sort of thing a statement is.",
+        "enum": [
+          "report",
+          "feeling",
+          "reflection",
+          "intention",
+          "observation"
+        ],
+        "title": "StatementKind",
+        "type": "string"
+      },
+      "Status": {
+        "description": "How well established a node or relationship is. Computed from evidence, never set by hand.",
+        "enum": [
+          "stated",
+          "observed",
+          "hypothesis"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
       "TranscriptOut": {
         "properties": {
           "segments": {
@@ -692,6 +1419,50 @@
         ]
       }
     },
+    "/api/v1/edges/{edge_id}/evidence": {
+      "get": {
+        "description": "The quotes behind a relationship.",
+        "operationId": "edge_evidence_api_v1_edges__edge_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "edge_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Edge Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "summary": "Edge Evidence",
+        "tags": [
+          "map"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "health_api_v1_health_get",
@@ -724,6 +1495,38 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/map": {
+      "get": {
+        "description": "Regions as polygons and landmarks as points. Unsorted items are kept off the map.",
+        "operationId": "get_map_api_v1_map_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "summary": "Get Map",
+        "tags": [
+          "map"
         ]
       }
     },
@@ -767,6 +1570,94 @@
         "summary": "Media Link",
         "tags": [
           "sources"
+        ]
+      }
+    },
+    "/api/v1/nodes/{node_id}": {
+      "get": {
+        "description": "One concept with its neighbours.",
+        "operationId": "get_node_api_v1_nodes__node_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "summary": "Get Node",
+        "tags": [
+          "map"
+        ]
+      }
+    },
+    "/api/v1/nodes/{node_id}/evidence": {
+      "get": {
+        "description": "The quotes behind a concept.",
+        "operationId": "node_evidence_api_v1_nodes__node_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "summary": "Node Evidence",
+        "tags": [
+          "map"
         ]
       }
     },
