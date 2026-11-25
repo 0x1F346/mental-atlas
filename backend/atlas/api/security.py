@@ -38,21 +38,21 @@ def tokens_match(expected: str, given: str | None) -> bool:
 
 
 class RateLimiter:
-    """A sliding one-minute window per key, held in memory. Enough for one API process."""
+    """Blocks a key after too many failures in a minute. Held in memory: one API process."""
 
     def __init__(self, limit_per_minute: int) -> None:
         self._limit = limit_per_minute
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._failures: dict[str, deque[float]] = defaultdict(deque)
 
-    def allow(self, key: str) -> bool:
+    def blocked(self, key: str) -> bool:
         now = time.monotonic()
-        hits = self._hits[key]
-        while hits and now - hits[0] > 60:
-            hits.popleft()
-        if len(hits) >= self._limit:
-            return False
-        hits.append(now)
-        return True
+        failures = self._failures[key]
+        while failures and now - failures[0] > 60:
+            failures.popleft()
+        return len(failures) >= self._limit
+
+    def record_failure(self, key: str) -> None:
+        self._failures[key].append(time.monotonic())
 
     def reset(self) -> None:
-        self._hits.clear()
+        self._failures.clear()

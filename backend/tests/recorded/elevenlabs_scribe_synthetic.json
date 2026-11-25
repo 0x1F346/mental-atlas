@@ -1,0 +1,30 @@
+{
+  "_note": "Built by hand from the ElevenLabs API reference (2026-11-25) for an invented exchange. Replace with a recorded response from a synthetic clip once `make smoke` has been run.",
+  "language_code": "en",
+  "language_probability": 0.99,
+  "text": "How was the week? I felt dread before the review. (sighs)",
+  "transcription_id": "invented-transcription-id",
+  "audio_duration_secs": 6.2,
+  "words": [
+    {"text": "How", "type": "word", "start": 0.1, "end": 0.3, "speaker_id": "speaker_0", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 0.3, "end": 0.35, "speaker_id": "speaker_0", "logprob": 0},
+    {"text": "was", "type": "word", "start": 0.35, "end": 0.5, "speaker_id": "speaker_0", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 0.5, "end": 0.55, "speaker_id": "speaker_0", "logprob": 0},
+    {"text": "the", "type": "word", "start": 0.55, "end": 0.65, "speaker_id": "speaker_0", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 0.65, "end": 0.7, "speaker_id": "speaker_0", "logprob": 0},
+    {"text": "week?", "type": "word", "start": 0.7, "end": 1.1, "speaker_id": "speaker_0", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 1.1, "end": 2.0, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "I", "type": "word", "start": 2.0, "end": 2.1, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 2.1, "end": 2.15, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "felt", "type": "word", "start": 2.15, "end": 2.4, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 2.4, "end": 2.45, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "dread", "type": "word", "start": 2.45, "end": 2.9, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 2.9, "end": 2.95, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "before", "type": "word", "start": 2.95, "end": 3.3, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 3.3, "end": 3.35, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "the", "type": "word", "start": 3.35, "end": 3.45, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": " ", "type": "spacing", "start": 3.45, "end": 3.5, "speaker_id": "speaker_1", "logprob": 0},
+    {"text": "review.", "type": "word", "start": null, "end": null, "speaker_id": "speaker_1", "logprob": -0.1},
+    {"text": "(sighs)", "type": "audio_event", "start": 4.5, "end": 5.0, "speaker_id": "speaker_1", "logprob": -0.1}
+  ]
+}

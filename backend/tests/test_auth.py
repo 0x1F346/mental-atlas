@@ -1,37 +1,12 @@
 """Sign-in, sign-out, the session cookie and GET /auth/me."""
 
 import uuid
-from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 
-from atlas.api.app import create_app
-from atlas.api.routes.auth import login_limiter
-from atlas.api.security import hash_password
-from tests.conftest import make_user
-
-PASSWORD = "an-invented-test-password"
-
-
-@pytest.fixture
-def client() -> Iterator[TestClient]:
-    login_limiter.reset()
-    with TestClient(create_app(), base_url="https://testserver") as test_client:
-        yield test_client
-
-
-@pytest.fixture
-def account(owner_engine: Engine) -> tuple[uuid.UUID, str]:
-    email = f"user-{uuid.uuid4().hex[:12]}@example.com"
-    user_id = make_user(email)
-    with owner_engine.begin() as connection:
-        connection.execute(
-            text("UPDATE users SET password_hash = :hash WHERE id = :id"),
-            {"hash": hash_password(PASSWORD), "id": user_id},
-        )
-    return user_id, email
+from tests.conftest import PASSWORD, make_user
 
 
 def sign_in(client: TestClient, email: str, password: str = PASSWORD) -> str:

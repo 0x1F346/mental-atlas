@@ -1,4 +1,4 @@
-.PHONY: dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
+.PHONY: e2e dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
 
 BACKEND := backend
 WEB := web
@@ -27,11 +27,22 @@ web:
 migrate:
 	cd $(BACKEND) && uv run alembic upgrade head
 
+API_GENERATED := src/api/generated
+
 generate:
 	cd $(BACKEND) && uv run python ../ontology/generate.py
+	cd $(BACKEND) && uv run python -m atlas.api.openapi ../$(WEB)/$(API_GENERATED)/openapi.json
+	cd $(WEB) && pnpm exec openapi-typescript $(API_GENERATED)/openapi.json -o $(API_GENERATED)/schema.d.ts
 
+# Regenerates into a scratch directory and fails if the committed files differ.
 generate-check:
 	cd $(BACKEND) && uv run python ../ontology/generate.py --check
+	@tmp=$$(mktemp -d) && \
+	(cd $(BACKEND) && uv run python -m atlas.api.openapi $$tmp/openapi.json) && \
+	(cd $(WEB) && pnpm exec openapi-typescript $$tmp/openapi.json -o $$tmp/schema.d.ts > /dev/null) && \
+	diff -q $$tmp/openapi.json $(WEB)/$(API_GENERATED)/openapi.json && \
+	diff -q $$tmp/schema.d.ts $(WEB)/$(API_GENERATED)/schema.d.ts && \
+	rm -rf $$tmp || (echo "stale generated API client: run make generate" && exit 1)
 
 lint:
 	cd $(BACKEND) && uv run ruff check . && uv run ruff format --check .
@@ -44,6 +55,10 @@ types:
 test:
 	cd $(BACKEND) && uv run pytest
 	cd $(WEB) && pnpm test
+
+# Browser test against the local stack with fake providers. Starts the stack if it is not running.
+e2e:
+	cd $(WEB) && pnpm e2e
 
 eval:
 	@echo "no evaluation harness yet (M3-T2)"

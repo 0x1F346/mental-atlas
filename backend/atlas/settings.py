@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     s3_access_key: SecretStr = SecretStr("atlas")
     s3_secret_key: SecretStr = SecretStr("atlas-local-secret")
     signed_link_ttl_seconds: int = 300
+    # "memory" keeps blobs in process memory; only tests use it.
+    blob_store: Literal["s3", "memory"] = "s3"
 
     # Providers. "fake" uses the in-repo fakes and makes no outside call.
     providers: Literal["fake", "live"] = "fake"
@@ -48,6 +50,10 @@ class Settings(BaseSettings):
     extraction_model: str = "claude-sonnet-5-5"
     small_model: str = "claude-haiku-5-5"
     transcription_model: str = "scribe_v3"
+    # "direct" waits for the transcript in one request; "poll" submits and asks again later.
+    transcription_mode: Literal["direct", "poll"] = "direct"
+    # Zero-retention mode at ElevenLabs (enterprise accounts only).
+    transcription_zero_retention: bool = False
     embedding_model: str = "fake-embedding"
     embedding_dimension: int = 1024
 
@@ -65,6 +71,12 @@ class Settings(BaseSettings):
     seed_user_password: SecretStr | None = None
 
     web_origin: str = "http://localhost:5173"
+
+    # Worker.
+    worker_name: str = "worker-1"
+    worker_poll_seconds: float = 1.0
+    job_lease_seconds: int = 900
+    job_max_attempts: int = 3
 
 
 @lru_cache

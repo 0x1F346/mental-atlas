@@ -47,7 +47,7 @@ def _set_cookie(response: Response, settings: Settings, token: str, max_age: int
 @router.post("/login")
 def login(body: LoginRequest, request: Request, response: Response, settings: SettingsDep) -> Me:
     client = request.client.host if request.client else "unknown"
-    if not login_limiter.allow(client):
+    if login_limiter.blocked(client):
         log.warning("auth.login_rate_limited")
         raise ApiError(429, "too_many_attempts", "Too many sign-in attempts. Wait a minute.")
     email = body.email.strip().lower()
@@ -56,6 +56,7 @@ def login(body: LoginRequest, request: Request, response: Response, settings: Se
             text("SELECT user_id, password_hash FROM atlas_login_lookup(:email)"), {"email": email}
         ).one_or_none()
     if not verify_password(row.password_hash if row else None, body.password) or row is None:
+        login_limiter.record_failure(client)
         log.warning("auth.login_failed")
         raise ApiError(401, "invalid_credentials", "Wrong email or password.")
 

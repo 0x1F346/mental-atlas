@@ -14,6 +14,8 @@ log = get_logger("atlas.api")
 class ErrorBody(BaseModel):
     code: str
     message: str
+    # Set on duplicate_source: the source that already holds this file.
+    source_id: str | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -21,21 +23,29 @@ class ErrorResponse(BaseModel):
 
 
 class ApiError(Exception):
-    def __init__(self, status_code: int, code: str, message: str) -> None:
+    def __init__(
+        self, status_code: int, code: str, message: str, *, source_id: str | None = None
+    ) -> None:
         super().__init__(code)
         self.status_code = status_code
         self.code = code
         self.message = message
+        self.source_id = source_id
 
 
-def _response(status_code: int, code: str, message: str) -> JSONResponse:
-    return JSONResponse({"error": {"code": code, "message": message}}, status_code=status_code)
+def _response(
+    status_code: int, code: str, message: str, source_id: str | None = None
+) -> JSONResponse:
+    body: dict[str, str] = {"code": code, "message": message}
+    if source_id is not None:
+        body["source_id"] = source_id
+    return JSONResponse({"error": body}, status_code=status_code)
 
 
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def api_error(_: Request, error: ApiError) -> JSONResponse:
-        return _response(error.status_code, error.code, error.message)
+        return _response(error.status_code, error.code, error.message, error.source_id)
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(_: Request, error: StarletteHTTPException) -> JSONResponse:
