@@ -39,6 +39,8 @@ known-third-party = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
 "alembic/versions/*" = ["E501"]
+"atlas/pipeline/fake_extraction.py" = ["E501"]
+"tests/*" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -49,13 +49,18 @@ class Settings(BaseSettings):
     # Model ids live here, never in code.
     extraction_model: str = "claude-sonnet-5-5"
     small_model: str = "claude-haiku-5-5"
+    extraction_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    # Retry a declined request on the provider's recommended fallback model.
+    extraction_fallbacks: bool = True
     transcription_model: str = "scribe_v3"
     # "direct" waits for the transcript in one request; "poll" submits and asks again later.
     transcription_mode: Literal["direct", "poll"] = "direct"
     # Zero-retention mode at ElevenLabs (enterprise accounts only).
     transcription_zero_retention: bool = False
     embedding_model: str = "fake-embedding"
-    embedding_dimension: int = 1024
+    embedding_dimension: int = 256
+    # Base URL of the hosted embedding API. Empty until the owner chooses a provider.
+    embedding_base_url: str = ""
 
     # Pipeline thresholds (starting values from the plan; tuned in the evaluation harness).
     speaker_role_confidence_threshold: float = 0.9
