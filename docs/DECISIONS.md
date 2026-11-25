@@ -117,3 +117,10 @@ Entry format:
 - Reason: It verifies everything that can be verified without a paid call.
 - Alternatives considered: None available without the owner.
 - Approved by owner: no. The M3 exit condition is not met until the owner runs `make eval` and the live scorecard meets its targets. Prompts `statements_v1`, `concepts_v1`, `match_v1` and `speaker_roles_v1` have never been run against a live model.
+
+## D-016 (2026-11-25) Backups for the local set-up; deployment left to the owner
+- Context: M6-T2 asks for a scheduled database dump and versioning on the bucket. Whether V1 is hosted (M6-T1) is an open question for the owner.
+- Decision: `make backup` dumps the local Postgres into a git-ignored directory and deletes dumps older than 30 days; `make restore-check` loads the newest dump into a scratch database and prints row counts; `make bucket-versioning` turns on object versioning with a lifecycle rule that expires earlier versions and delete markers after 30 days. Scheduling is one cron or launchd line, given in `scripts/backup.sh`; nothing is installed on the owner's machine. No deployment work (container images, managed Postgres, HTTPS, secrets) has been done.
+- Reason: These are the parts of M6-T2 that do not depend on the hosting decision. The 30-day expiry keeps the plan's promise that deleted data leaves the backups.
+- Alternatives considered: Installing a launchd job; rejected as a change to the owner's machine that was not asked for.
+- Approved by owner: not needed for the scripts. M6-T1 awaits the owner's decision.

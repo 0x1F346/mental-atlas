@@ -10,6 +10,8 @@ from botocore.exceptions import ClientError
 from atlas.providers.base import BlobInfo
 from atlas.settings import Settings
 
+NONCURRENT_DAYS = 30
+
 
 class S3BlobStore:
     def __init__(self, settings: Settings) -> None:
@@ -29,6 +31,30 @@ class S3BlobStore:
             self._client.head_bucket(Bucket=self._bucket)
         except ClientError:
             self._client.create_bucket(Bucket=self._bucket)
+
+    def enable_versioning(self) -> str:
+        """Keep earlier versions of every object, so an overwrite or delete can be undone."""
+        self._client.put_bucket_versioning(
+            Bucket=self._bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        # A retracted source's files must still disappear: earlier versions and delete
+        # markers expire after the same period as database backups.
+        self._client.put_bucket_lifecycle_configuration(
+            Bucket=self._bucket,
+            LifecycleConfiguration={
+                "Rules": [
+                    {
+                        "ID": "expire-noncurrent-versions",
+                        "Status": "Enabled",
+                        "Filter": {"Prefix": ""},
+                        "NoncurrentVersionExpiration": {"NoncurrentDays": NONCURRENT_DAYS},
+                        "Expiration": {"ExpiredObjectDeleteMarker": True},
+                    }
+                ]
+            },
+        )
+        status: str = self._client.get_bucket_versioning(Bucket=self._bucket).get("Status", "")
+        return status
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self._client.put_object(Bucket=self._bucket, Key=key, Body=data, ContentType=content_type)

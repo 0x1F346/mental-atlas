@@ -33,11 +33,20 @@ def _set_password(email: str, password: str, only_if_locked: bool = False) -> in
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["set-password", "dev-password"])
+    parser.add_argument("command", choices=["set-password", "dev-password", "bucket-versioning"])
     parser.add_argument("--email", default=None)
     args = parser.parse_args()
     settings = get_settings()
     email = (args.email or settings.seed_user_email).lower()
+
+    if args.command == "bucket-versioning":
+        from atlas.providers.blob_s3 import S3BlobStore
+
+        store = S3BlobStore(settings)
+        store.ensure_bucket()
+        status = store.enable_versioning()
+        sys.stdout.write(f"bucket versioning: {status or 'not enabled'}\n")
+        return 0 if status == "Enabled" else 1
 
     if args.command == "dev-password":
         if settings.environment != "development":
