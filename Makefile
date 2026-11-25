@@ -24,7 +24,7 @@ web:
 	cd $(WEB) && pnpm dev
 
 migrate:
-	@echo "no migrations yet (M1-T3)"
+	cd $(BACKEND) && uv run alembic upgrade head
 
 generate:
 	cd $(BACKEND) && uv run python ../ontology/generate.py
