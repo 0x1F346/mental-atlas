@@ -1,4 +1,4 @@
-.PHONY: eval-fake e2e dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
+.PHONY: smoke backup restore-check bucket-versioning eval-fake e2e dev infra api worker web test lint types generate generate-check migrate eval smoke verify install
 
 BACKEND := backend
 WEB := web
@@ -64,8 +64,23 @@ e2e:
 eval:
 	cd $(BACKEND) && uv run python ../evals/run_eval.py --providers live
 
+# One live call per provider adapter, with invented material. Costs money: ask the owner first.
+# `make smoke RECORD=1` also saves the transcription response as the recorded test fixture.
+smoke:
+	cd $(BACKEND) && ATLAS_PROVIDERS=live uv run python -m atlas.smoke $(if $(RECORD),--record,)
+
 # The same scorecard with each fixture's expected output replayed. No outside call.
 eval-fake:
 	cd $(BACKEND) && uv run python ../evals/run_eval.py --providers oracle --no-history
+
+# Local backups (M6-T2). Dumps go to a git-ignored directory; see scripts/backup.sh.
+backup:
+	./scripts/backup.sh
+
+restore-check:
+	./scripts/restore_check.sh
+
+bucket-versioning:
+	cd $(BACKEND) && uv run python -m atlas.cli bucket-versioning
 
 verify: lint types test generate-check

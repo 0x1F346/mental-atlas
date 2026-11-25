@@ -111,7 +111,8 @@ def recompute(
             and rules.is_diagnosis(node.type, node.kind)
             and not rules.diagnosis_allowed(facts)
         )
-        if unstated_diagnosis and strict:
+        already_retracted = node.state == RecordState.RETRACTED.value
+        if unstated_diagnosis and strict and not already_retracted:
             raise RuleViolation("diagnosis_without_explicit_statement")
         if unstated_diagnosis:
             # Retract before the status changes, so an active diagnosis is never a hypothesis.
@@ -119,17 +120,17 @@ def recompute(
         node.evidence_count = computed.evidence_count
         node.first_seen_at = computed.first_seen_at
         node.last_seen_at = computed.last_seen_at
-        if node.run_id is None and not facts:
+        if node.is_system and not facts:
             continue  # A system node keeps its seeded status and place.
         node.noticed_by = computed.noticed_by
         node.status = computed.status.value
         node.confidence = computed.confidence
-        if node.run_id is not None or computed.life_area_weights:
+        if not node.is_system or computed.life_area_weights:
             node.life_area_weights = computed.life_area_weights
             node.life_area_id = areas.get(computed.home_area.value)
         if node.state == RecordState.MERGED.value or unstated_diagnosis:
             continue
-        if not facts and node.run_id is not None:
+        if not facts and not node.is_system:
             node.state = RecordState.RETRACTED.value
         elif node.state == RecordState.RETRACTED.value:
             node.state = RecordState.ACTIVE.value
@@ -210,6 +211,13 @@ def retract_run(session: Session, run_id: uuid.UUID) -> Retraction:
     in_use = set(
         session.scalars(select(Edge.from_node_id).where(Edge.from_node_id.in_(created_nodes)))
     ) | set(session.scalars(select(Edge.to_node_id).where(Edge.to_node_id.in_(created_nodes))))
+    in_use |= {
+        node_id
+        for node_id in session.scalars(
+            select(Edge.context_event_id).where(Edge.context_event_id.in_(created_nodes))
+        )
+        if node_id is not None
+    }
     dead_nodes = {
         node_id
         for node_id in created_nodes

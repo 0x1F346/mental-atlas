@@ -117,3 +117,34 @@ Entry format:
 - Reason: It verifies everything that can be verified without a paid call.
 - Alternatives considered: None available without the owner.
 - Approved by owner: no. The M3 exit condition is not met until the owner runs `make eval` and the live scorecard meets its targets. Prompts `statements_v1`, `concepts_v1`, `match_v1` and `speaker_roles_v1` have never been run against a live model.
+
+## D-016 (2026-11-25) Backups for the local set-up; deployment left to the owner
+- Context: M6-T2 asks for a scheduled database dump and versioning on the bucket. Whether V1 is hosted (M6-T1) is an open question for the owner.
+- Decision: `make backup` dumps the local Postgres into a git-ignored directory and deletes dumps older than 30 days; `make restore-check` loads the newest dump into a scratch database and prints row counts; `make bucket-versioning` turns on object versioning with a lifecycle rule that expires earlier versions and delete markers after 30 days. Scheduling is one cron or launchd line, given in `scripts/backup.sh`; nothing is installed on the owner's machine. No deployment work (container images, managed Postgres, HTTPS, secrets) has been done.
+- Reason: These are the parts of M6-T2 that do not depend on the hosting decision. The 30-day expiry keeps the plan's promise that deleted data leaves the backups.
+- Alternatives considered: Installing a launchd job; rejected as a change to the owner's machine that was not asked for.
+- Approved by owner: not needed for the scripts. M6-T1 awaits the owner's decision.
+
+## D-017 (2026-11-25) Independent review of the backend: what was fixed and what was left
+- Context: After M5 a separate reviewer read the API, database, retraction and pipeline code. It found no way for one user to reach another's rows, and eleven defects elsewhere.
+- Decision: Fixed, each with a regression test in `tests/test_review_fixes.py` unless noted:
+  1. A job cancelled by a reprocess or retraction while its stage ran used to finish anyway and queue the next stage. The runner now re-checks the job under a row lock and discards the stage's work. Confirming an upload locks the source row.
+  2. Two sources matched before either committed created duplicate concepts, and a concept deleted between matching and commit broke the commit. The commit now reuses a same-named concept created since matching, and sends the source back to the concepts stage when a reused concept has gone.
+  3. A diagnosis was accepted on the model's own `explicit` label. It now also needs the speaker's verbatim quote to contain a word of the diagnosis name, and a rejected diagnosis is never salvaged into unsorted.
+  4. The "did the speaker name this feeling" check read the model's restatement and matched inside words. It now reads the quote only and matches whole-word openings.
+  5. A retracted diagnosis could make every later commit that touched it fail. It now stays retracted and is not offered as a match.
+  6. A node with no run was treated as system-created, and deleting a source clears run ids, so an ordinary node could become permanent. Migration 0003 adds `nodes.is_system` (no dedicated test; covered by the existing retraction tests).
+  7. An event used only as another relationship's context was deleted on retraction. It is now kept (no dedicated test).
+  8. Deleting a source now also deletes the derived audio and raw transcript by their fixed keys, whether or not a database row records them (no dedicated test).
+  9. A job that kept outliving its lease was reclaimed forever; it is now failed after `ATLAS_JOB_MAX_ATTEMPTS`. A failed heartbeat no longer ends the heartbeat thread.
+  10. Sign-in attempts are counted before the password check, and idle entries are dropped from the limiter.
+  11. Database engines hide bound parameters, and unhandled API errors are caught before the server can log their message.
+- Left as they are:
+  - Matching by similarity (not by exact name) can still create a duplicate when two sources are processed at once. The plan assumes one source at a time; duplicates can be merged.
+  - A stage that uploads a file after its source was deleted leaves that file in storage until the bucket's lifecycle rule or a manual clean-up removes it.
+  - The sign-in limit is keyed on the connecting address. Behind a reverse proxy every client shares one address, so this needs the proxy's forwarded address before hosting.
+  - The logger accepts any single token of up to 80 characters as a code, so a one-word name passed as a field would be logged. No call site does this.
+  - `ATLAS_COOKIE_SECURE` defaults to false for local HTTP and must be set when serving over HTTPS.
+- Reason: The fixed items could corrupt the atlas, store an inference as a statement, or block deletion. The others are bounded and belong with the hosting work.
+- Alternatives considered: A unique constraint on concept names, rejected because two different people or events may share a name.
+- Approved by owner: not needed

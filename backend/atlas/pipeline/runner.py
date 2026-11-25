@@ -109,7 +109,17 @@ def _retract_previous(
         atlas_store.retract_run(session, run_id)
 
 
+class Cancelled(Exception):
+    """The job was cancelled while its stage ran; everything the stage did is discarded."""
+
+
 def _finish(ctx: StageContext, stage: Stage, outcome: Outcome) -> None:
+    # A reprocess or a retraction may have cancelled this job while the stage ran.
+    still_running = ctx.session.scalar(
+        select(Job.status).where(Job.id == ctx.job.id).with_for_update()
+    )
+    if still_running != "running":
+        raise Cancelled
     if isinstance(outcome, Defer):
         ctx.job.status = "queued"
         ctx.job.attempts = max(ctx.job.attempts - 1, 0)  # Waiting on a provider is not a failure.
@@ -139,9 +149,9 @@ def _fail(
 ) -> bool:
     """Record a failure. Returns True when the job will be tried again."""
     with user_session(claimed.user_id) as session:
-        job = session.get(Job, claimed.job_id)
-        if job is None:
-            return False
+        job = session.get(Job, claimed.job_id, with_for_update=True)
+        if job is None or job.status != "running":
+            return False  # Cancelled meanwhile; leave it as the canceller set it.
         job.locked_at = job.locked_by = None
         job.error = code
         if retryable and job.attempts < max_attempts:
@@ -174,12 +184,16 @@ class _Heartbeat:
 
     def _beat(self) -> None:
         while not self._stop.wait(HEARTBEAT_SECONDS):
-            with user_session(self._claimed.user_id) as session:
-                session.execute(
-                    update(Job)
-                    .where(Job.id == self._claimed.job_id, Job.status == "running")
-                    .values(locked_at=func.now())
-                )
+            try:
+                with user_session(self._claimed.user_id) as session:
+                    session.execute(
+                        update(Job)
+                        .where(Job.id == self._claimed.job_id, Job.status == "running")
+                        .values(locked_at=func.now())
+                    )
+            except Exception as error:
+                # One missed beat must not end the heartbeat; the next one renews the lease.
+                log.warning("job.heartbeat_failed", job_id=self._claimed.job_id, error=error)
 
     def __enter__(self) -> None:
         self._thread.start()
@@ -214,6 +228,9 @@ def run_job(
             )
             outcome = handlers[stage](ctx)
             _finish(ctx, stage, outcome)
+    except Cancelled:
+        log.info("stage.cancelled", stage=stage, source_id=source_id, run_id=run_id)
+        return
     except Exception as error:
         if isinstance(error, StageError):
             code, retryable = error.code, error.retryable
@@ -245,7 +262,9 @@ def run_job(
 
 def work_once(handlers: dict[Stage, Handler], providers: Providers, settings: Settings) -> bool:
     """Claim and run one job. Returns False when the queue is empty."""
-    claimed = queue.claim(settings.worker_name, settings.job_lease_seconds)
+    claimed = queue.claim(
+        settings.worker_name, settings.job_lease_seconds, settings.job_max_attempts
+    )
     if claimed is None:
         return False
     run_job(claimed, handlers, providers, settings)

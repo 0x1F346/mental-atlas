@@ -136,7 +136,7 @@ def test_recording_reaches_a_transcript_with_correct_roles(
     }
     assert roles == {"speaker_0": ("therapist", "model"), "speaker_1": ("self", "model")}
     therapist = db.scalars(select(Node).where(Node.name == "My therapist")).one()
-    assert therapist.run_id is None and therapist.status == "stated"
+    assert therapist.is_system and therapist.status == "stated"
     assert status_of(db, source_id) == "ready"
 
     transcriber = providers.transcriber

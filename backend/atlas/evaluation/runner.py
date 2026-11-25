@@ -86,7 +86,7 @@ def judge(
             ),
             Node.state == RecordState.ACTIVE.value,
             Node.type != NodeType.UNSORTED.value,
-            Node.run_id.is_not(None),
+            Node.is_system.is_(False),
         )
         .order_by(Node.id)
         .limit(JUDGE_SAMPLE)

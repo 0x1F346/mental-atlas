@@ -20,11 +20,19 @@ working on before changing code.
 - make generate  regenerate code from the vocabulary and the API schema
 - make migrate   apply migrations
 - make eval      live extraction scorecard; costs money, ask first
+- make eval-fake scorecard with expected output replayed; no outside call
+- make e2e       browser tests against the local stack with fake providers
+- make smoke     one live call per provider adapter; costs money, ask first
 
 ## Layout
 - backend/atlas: api, domain (generated models, rules), db, pipeline, providers, graph
 - web/src: map, sources, generated API client
 - evals: synthetic fixtures and scorecard
+
+## Working in this repository
+- The Bash deny rules block any shell command whose text names the local env file or `data/`,
+  heredocs included. Write such files with the editor tools.
+- Tests use the `atlas_test` database; `make infra` must be running.
 
 ## Rules that must never be broken
 1. Postgres is the only source of truth.

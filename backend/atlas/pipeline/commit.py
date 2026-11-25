@@ -29,6 +29,7 @@ from atlas.domain.generated.vocabulary import (
     VOCABULARY_VERSION,
     EvidenceBasis,
     EvidenceStance,
+    NodeType,
     RecordState,
     SpeakerRole,
 )
@@ -119,6 +120,22 @@ def _canonical(session: Session, node_id: uuid.UUID) -> uuid.UUID:
     return node_id
 
 
+def _same_name(session: Session, item: dict[str, Any]) -> uuid.UUID | None:
+    """An active node of the same type with exactly this name, created since matching.
+
+    Events and unsorted items are left alone: an event needs its date and people to agree.
+    """
+    if item["type"] in (NodeType.EVENT.value, NodeType.UNSORTED.value):
+        return None
+    return session.scalars(
+        select(Node.id).where(
+            Node.type == item["type"],
+            Node.normalized_name == normalize_name(item["name"]),
+            Node.state == RecordState.ACTIVE.value,
+        )
+    ).first()
+
+
 def commit_stage(ctx: StageContext) -> Outcome:
     session = ctx.session
     statements_run = latest_run(session, ctx.source.id, Stage.STATEMENTS)
@@ -134,13 +151,24 @@ def commit_stage(ctx: StageContext) -> Outcome:
         atlas_store.retract_run(session, concepts_run.id)
         concepts_run.status = "succeeded"
 
+    # Matching was done when the concepts stage ran. If another source has changed the
+    # atlas since, a node this proposal reuses may be gone: match again against today's atlas.
+    reused = [uuid.UUID(item["node_id"]) for item in proposal["nodes"] if not item["is_new"]]
+    present = set(session.scalars(select(Node.id).where(Node.id.in_(reused))))
+    if len(present) != len(set(reused)):
+        return Next(Stage.CONCEPTS, usage={"rematch": 1})
+
     # 1. Statements, new nodes, new relationships and evidence links.
     statements = insert_statements(ctx, statements_run, statements_run.raw_output["statements"])
     node_ids: dict[str, uuid.UUID] = {}
     touched_nodes: set[uuid.UUID] = set()
     for item in proposal["nodes"]:
         proposed_id = uuid.UUID(item["node_id"])
-        if item["is_new"]:
+        # Another source may have created the same concept since matching: reuse it.
+        twin = _same_name(session, item) if item["is_new"] else None
+        if twin is not None:
+            node_id = twin
+        elif item["is_new"]:
             facts = _facts(item["evidence"], statements)
             # Enforced before anything is inserted, and again by a database constraint.
             rules.enforce_diagnosis_rule(item["type"], item["kind"], facts)
@@ -164,6 +192,7 @@ def commit_stage(ctx: StageContext) -> Outcome:
             node_id = proposed_id
         else:
             node_id = _canonical(session, proposed_id)
+        is_new = item["is_new"] and twin is None
         node_ids[item["node_id"]] = node_id
         session.flush()
 
@@ -185,7 +214,7 @@ def commit_stage(ctx: StageContext) -> Outcome:
                 )
         for link in item["evidence"]:
             session.add(_evidence(ctx, concepts_run, "node", node_id, link))
-        if item["evidence"] or item["is_new"]:
+        if item["evidence"] or is_new:
             touched_nodes.add(node_id)
 
     touched_edges: set[uuid.UUID] = set()

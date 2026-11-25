@@ -226,7 +226,10 @@ def create_source(
 def complete_upload(source_id: uuid.UUID, auth: AuthDep, providers: ProvidersDep) -> SourceOut:
     duplicate: DuplicateSource | None = None
     with tempfile.TemporaryDirectory(prefix="atlas-") as workdir, user_session(auth.user_id) as db:
-        source = _source(db, source_id)
+        # Locked, so two confirmations of one upload cannot both queue processing.
+        source = db.get(Source, source_id, with_for_update=True)
+        if source is None:
+            raise ApiError(404, "source_not_found", "No such source.")
         if source.status != SourceStatus.UPLOADED.value:
             raise ApiError(409, "already_completed", "This upload was already confirmed.")
         try:

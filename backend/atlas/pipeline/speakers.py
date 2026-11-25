@@ -72,7 +72,7 @@ def therapist_node(session: Session, user_id: uuid.UUID) -> Node:
     existing = session.scalars(
         select(Node).where(
             Node.type == NodeType.PERSON.value,
-            Node.run_id.is_(None),
+            Node.is_system.is_(True),
             Node.attributes["relationship_to_owner"].as_string() == THERAPIST_RELATIONSHIP,
         )
     ).first()
@@ -91,6 +91,7 @@ def therapist_node(session: Session, user_id: uuid.UUID) -> Node:
         noticed_by=[NoticedBy.SELF.value],
         status=Status.STATED.value,
         schema_version=VOCABULARY_VERSION,
+        is_system=True,
     )
     session.add(node)
     session.flush()

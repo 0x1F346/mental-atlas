@@ -168,7 +168,7 @@ def test_a_second_source_reuses_concepts_and_logs_each_decision(
     assert "new" in decisions
     # The journal's offsite has no date, so it is not merged with the dated one.
     assert len(db.scalars(select(Node).where(Node.normalized_name.contains("offsite"))).all()) == 2
-    embedded = db.scalars(select(Node).where(Node.run_id.is_not(None))).all()
+    embedded = db.scalars(select(Node).where(Node.is_system.is_(False))).all()
     assert all(n.embedding is not None and n.embedding_model == "fake-embedding" for n in embedded)
     assert all(n.embedding_dimension == 256 for n in embedded)
 
@@ -306,7 +306,7 @@ def test_a_diagnosis_nobody_stated_is_never_stored(
     )
     source_id = process(user_id, providers, JOURNAL)
     assert status_of(db, source_id) == "ready"
-    names = set(db.scalars(select(Node.name).where(Node.run_id.is_not(None))))
+    names = set(db.scalars(select(Node.name).where(Node.is_system.is_(False))))
     assert names == {"restlessness"}
     dropped = run_counts(db, source_id, "concepts")["dropped"]
     assert dropped == {"diagnosis_without_explicit_statement": 1}

@@ -81,9 +81,13 @@ def test_adding_a_second_source_moves_no_existing_landmark(
             assert after[key] == point, key
 
 
-def test_reprocessing_puts_concepts_back_where_they_were(
+def test_reprocessing_keeps_the_same_landmarks_and_pinned_positions(
     db: Session, user_id: uuid.UUID, providers: Providers
 ) -> None:
+    """Reprocessing recreates a source's concepts, so they are placed afresh around
+    whatever is already pinned. The set of landmarks is unchanged and nothing that
+    survived the reprocess moves; exact positions of the recreated ones may differ.
+    """
     use_oracle(providers)
     source_id = process(user_id, providers, load_fixture("session_one"))
     before = positions(db)
@@ -92,7 +96,10 @@ def test_reprocessing_puts_concepts_back_where_they_were(
         assert source is not None
         sources.reprocess(session, source, Stage.STATEMENTS)
     run_pipeline(providers)
-    assert positions(db) == before
+    after = positions(db)
+    assert set(after) == set(before)
+    for pinned in ("person:me", "person:my therapist"):
+        assert after[pinned] == before[pinned]
 
 
 def test_unsorted_and_retracted_concepts_are_kept_off_the_map(

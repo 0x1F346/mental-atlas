@@ -162,7 +162,7 @@ def score_fixture(
                 Node.id.in_(node_ids),
                 Node.state == RecordState.ACTIVE.value,
                 Node.type != NodeType.UNSORTED.value,
-                Node.run_id.is_not(None),
+                Node.is_system.is_(False),
             )
         )
     ]
