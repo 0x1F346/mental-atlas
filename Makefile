@@ -12,6 +12,7 @@ infra:
 	docker compose up -d --wait
 
 dev: infra migrate
+	cd $(BACKEND) && uv run python -m atlas.cli dev-password
 	$(MAKE) -j3 api worker web
 
 api:
@@ -24,13 +25,13 @@ web:
 	cd $(WEB) && pnpm dev
 
 migrate:
-	@echo "no migrations yet (M1-T3)"
+	cd $(BACKEND) && uv run alembic upgrade head
 
 generate:
-	@echo "no generator yet (M1-T2)"
+	cd $(BACKEND) && uv run python ../ontology/generate.py
 
 generate-check:
-	@echo "no generator yet (M1-T2)"
+	cd $(BACKEND) && uv run python ../ontology/generate.py --check
 
 lint:
 	cd $(BACKEND) && uv run ruff check . && uv run ruff format --check .
