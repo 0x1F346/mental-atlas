@@ -3,3 +3,20 @@ data/
 .env.local
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Web
+node_modules/
+dist/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+.DS_Store
