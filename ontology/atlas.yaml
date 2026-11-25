@@ -1,0 +1,273 @@
+# The Mental Atlas vocabulary. This file is the single definition.
+#
+# Enums, validation models, database check constraints, the extraction schema,
+# TypeScript types and docs/ONTOLOGY.md are generated from it by ontology/generate.py.
+# To change it: get the owner's approval, edit this file, raise `version`,
+# run `make generate`, and add a migration.
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# Node types
+# ---------------------------------------------------------------------------
+# group: core (written by extraction), derived (written only by analysis jobs,
+# from phase 2), or special (unsorted).
+# kinds: allowed values of the node's `kind` column. Omitted means the type has no kinds.
+# fields: type-specific values stored in the node's `attributes`.
+#   field type is one of: text, date, boolean, enum (with `values`).
+
+node_types:
+  person:
+    label: Person
+    group: core
+    meaning: Someone in the owner's life, as the owner sees them. The owner is also a Person, flagged is_self.
+    fields:
+      relationship_to_owner: {type: text, meaning: "How this person relates to the owner, in the owner's words."}
+      is_self: {type: boolean, meaning: "True only for the owner's own Person node."}
+  group:
+    label: Group
+    group: core
+    meaning: "A set of people: a family, an employer, a friend circle."
+    kinds: [family, employer, friend_circle, other]
+  situation:
+    label: Situation
+    group: core
+    meaning: An ongoing circumstance that could change or end.
+    fields:
+      start: {type: date, meaning: When the situation began, if known.}
+      end: {type: date, meaning: When the situation ended, if it has.}
+  event:
+    label: Event
+    group: core
+    meaning: One dated occasion, past or planned.
+    fields:
+      when: {type: date, meaning: The date of the occasion, as precisely as known.}
+      precision: {type: enum, values: [day, month, year, approximate, unknown], meaning: How precise `when` is.}
+      occurrence: {type: enum, values: [happened, planned], meaning: Whether the occasion has happened or is planned.}
+  feeling:
+    label: Feeling
+    group: core
+    meaning: An emotion.
+  sensation:
+    label: Sensation
+    group: core
+    meaning: A bodily sensation.
+    fields:
+      body_area: {type: text, meaning: Where in the body it is felt.}
+  belief:
+    label: Belief
+    group: core
+    meaning: A standing conviction about oneself, a person or the world. Judgements of people are Beliefs.
+  behaviour:
+    label: Behaviour
+    group: core
+    meaning: Something a person does.
+    kinds: [coping_tool]
+  need:
+    label: Need
+    group: core
+    meaning: What a feeling or behaviour seeks or protects.
+  value:
+    label: Value
+    group: core
+    meaning: What matters to a person.
+  goal:
+    label: Goal
+    group: core
+    meaning: Something being worked towards.
+    fields:
+      progress: {type: enum, values: [open, reached, dropped], meaning: Where the goal stands.}
+  trait:
+    label: Trait
+    group: core
+    meaning: A lasting characteristic of a person.
+    kinds: [strength, diagnosis, physical, other]
+    kind_required: true
+  role:
+    label: Role
+    group: core
+    meaning: A role or identity a person holds.
+
+  pattern:
+    label: Pattern
+    group: derived
+    meaning: A recurring sequence seen across events. Written only by analysis jobs, from phase 2.
+  tension:
+    label: Tension
+    group: derived
+    meaning: Two things that pull against each other. Written only by analysis jobs, from phase 2.
+  blind_spot:
+    label: Blind spot
+    group: derived
+    meaning: Something observed or inferred across sources that the owner has not named. Written only by analysis jobs, from phase 2.
+
+  unsorted:
+    label: Unsorted
+    group: special
+    meaning: Anything that fits no type. Stored with a suggested type and a reason, and kept off the map.
+    fields:
+      suggested_type: {type: text, meaning: The type the extractor would have used if one fitted.}
+      reason: {type: text, meaning: Why no existing type fitted.}
+
+# ---------------------------------------------------------------------------
+# Relationship types
+# ---------------------------------------------------------------------------
+# from / to: lists of node types, or one of the shorthands
+#   any_core  the 13 core types
+#   any_node  the core types and the derived types
+# phase: the first phase that writes the relationship (default 1).
+# fields: values stored in the edge's `attributes`.
+# context_event: true when the edge records the Event it happened in (edges.context_event_id).
+
+relationship_types:
+  LED_TO:
+    from: any_core
+    to: [feeling, sensation, belief, behaviour, event]
+    meaning: One thing came right before, or brought on, another. Records the Event it happened in when known.
+    context_event: true
+  OCCURRED_IN:
+    from: [feeling, sensation, belief, behaviour]
+    to: [event]
+    meaning: It showed up during that event. Carries its order in the event.
+    fields:
+      order: {type: integer, meaning: Position within the event, starting at 1.}
+  ABOUT:
+    from: [feeling, belief, need, goal]
+    to: [person, group, situation, event, trait, role]
+    meaning: What it concerns. A belief about oneself points at the owner's Person node.
+  CAME_FROM:
+    from: [belief, value, behaviour, need, trait]
+    to: [event, person, group, situation]
+    meaning: Where it originated.
+  HOLDS:
+    from: [person]
+    to: [belief, value, goal, role]
+    meaning: That person holds it.
+  HAS:
+    from: [person]
+    to: [trait, need]
+    meaning: That person has it.
+  BELONGS_TO:
+    from: [person]
+    to: [group]
+    meaning: Membership.
+  INVOLVES:
+    from: [event, situation]
+    to: [person, group]
+    meaning: Who was part of it.
+  PART_OF:
+    from: [event, role]
+    to: [situation, group]
+    meaning: An event inside a situation, or a role inside a group or situation.
+  SERVES:
+    from: [behaviour, feeling, belief]
+    to: [need]
+    meaning: It exists to meet that need.
+  HELPS:
+    from: [behaviour, trait, person, situation, belief]
+    to: [goal, need, feeling, situation]
+    meaning: It makes the target easier. Coping tools use this.
+  BLOCKS:
+    from: [behaviour, trait, person, situation, belief]
+    to: [goal, need, value]
+    meaning: It gets in the way.
+  CONFLICTS_WITH:
+    from: [belief, value, need, goal, behaviour, role]
+    to: [belief, value, need, goal, behaviour, role]
+    meaning: The two pull against each other.
+  SEEN_IN:
+    from: [pattern]
+    to: [event]
+    meaning: The pattern played out in that event.
+    phase: 2
+  HAS_STEP:
+    from: [pattern]
+    to: any_core
+    meaning: An ordered step of the pattern.
+    phase: 2
+    fields:
+      order: {type: integer, meaning: Position within the pattern, starting at 1.}
+  BETWEEN:
+    from: [tension]
+    to: any_node
+    meaning: One side of the tension.
+    phase: 2
+  CONCERNS:
+    from: [blind_spot]
+    to: any_node
+    meaning: What the blind spot is about.
+    phase: 2
+
+# ---------------------------------------------------------------------------
+# Shared enumerations
+# ---------------------------------------------------------------------------
+
+enums:
+  speaker_role:
+    meaning: Who a voice belongs to.
+    values:
+      self: The owner.
+      therapist: The owner's therapist.
+      other: Anyone else.
+  statement_kind:
+    meaning: What sort of thing a statement is.
+    values:
+      report: What happened.
+      feeling: How it felt.
+      reflection: An interpretation or realisation.
+      intention: What the speaker means to do.
+      observation: A therapist's remark about the owner.
+  evidence_stance:
+    meaning: Whether a statement backs or disputes the thing it is linked to.
+    values:
+      supports: The statement backs it.
+      contradicts: The statement disputes it. Both sides are kept.
+  evidence_basis:
+    meaning: How directly the statement names the thing.
+    values:
+      explicit: The speaker named it.
+      implied: The extractor inferred it from what was said.
+  noticed_by:
+    meaning: Who has noticed a node or relationship. Computed from evidence, never set by hand.
+    values:
+      self: The owner named it explicitly.
+      therapist: The therapist named it explicitly.
+      ai: The extractor inferred it.
+  status:
+    meaning: How well established a node or relationship is. Computed from evidence, never set by hand.
+    values:
+      stated: The owner has named it.
+      observed: Only the therapist has named it.
+      hypothesis: Nobody has named it. Always labelled as a hypothesis.
+  record_state:
+    meaning: Life-cycle state of a node or relationship.
+    values:
+      active: In the atlas.
+      merged: Folded into another node. Reversible.
+      retracted: Left with no evidence after a retraction.
+  life_area:
+    meaning: The six fixed regions of the map, clockwise from the top, with Self at the centre.
+    values:
+      love: Love
+      family: Family
+      friendships: Friendships
+      work: Work
+      body_health: Body and health
+      self: Self
+  source_kind:
+    meaning: What sort of input a source is.
+    values:
+      therapy_session: A recorded therapy session with the owner and the therapist.
+      voice_note: A recording of the owner alone.
+      journal: Text written by the owner.
+      archive: An item from an existing archive (bulk import, phase 2).
+  source_status:
+    meaning: Where a source is in the pipeline.
+    values:
+      uploaded: Received, not yet processed.
+      transcribing: Media and transcription stages are running.
+      needs_speaker_check: Waiting for the owner to say which voice is theirs.
+      extracting: Statement and concept extraction are running.
+      placing: Embedding and map placement are running.
+      ready: Visible on the map.
+      failed: A stage failed and can be retried.

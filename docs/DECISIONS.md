@@ -47,3 +47,10 @@ Entry format:
 - Reason: Host processes reload quickly and need no image builds; container images for the app are M6-T1 work. The Chainguard build keeps MinIO as planned.
 - Alternatives considered: Running everything in Compose; another S3-compatible server (SeaweedFS, RustFS).
 - Approved by owner: not needed
+
+## D-006 (2026-11-25) Vocabulary version 1: values the plan left open
+- Context: The plan names some type-specific fields without listing their values, and names `ontology/atlas.yaml` as the one vocabulary file.
+- Decision: Version 1 fills the gaps as follows. Group kinds: `family`, `employer`, `friend_circle`, `other` (optional). Event fields: `when` (date), `precision` (`day`, `month`, `year`, `approximate`, `unknown`), `occurrence` (`happened`, `planned`). Goal field `progress` (`open`, `reached`, `dropped`). Behaviour kind is `coping_tool` or empty. Trait kind is required. Source kinds: `therapy_session`, `voice_note`, `journal`, `archive`. The file also holds the shared enumerations (speaker roles, statement kinds, stance, basis, noticed-by, status, record state, life areas, source status) so that every constraint is generated from one place.
+- Reason: Constraints and the extraction schema need closed sets. Each set has an escape value or is optional, so nothing the plan describes is excluded.
+- Alternatives considered: Free-text fields; rejected because they cannot be checked.
+- Approved by owner: not needed for creating version 1 from the plan; the owner should review these values, and any later change needs approval.
