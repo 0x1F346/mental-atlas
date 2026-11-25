@@ -225,8 +225,9 @@ class Node(Row):
     state: Mapped[str] = mapped_column(default="active", server_default="active")
     merged_into_id: Mapped[uuid.UUID | None] = mapped_column(_fk("nodes.id", "SET NULL"))
     schema_version: Mapped[int]
-    # NULL for nodes the system creates (the owner's own Person node, the therapist).
     run_id: Mapped[uuid.UUID | None] = mapped_column(_fk("runs.id", "SET NULL"))
+    # Created by the system (the owner's own Person node, the therapist); never retracted.
+    is_system: Mapped[bool] = mapped_column(default=False, server_default="false")
     embedding: Mapped[Any | None] = mapped_column(Vector())
     embedding_model: Mapped[str | None]
     embedding_dimension: Mapped[int | None]

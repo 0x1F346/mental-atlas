@@ -198,7 +198,7 @@ def test_extracted_concepts_survive_reprocessing_and_go_with_the_source(
             counted = connection.execute(
                 text(
                     "SELECT (SELECT count(*) FROM statements WHERE user_id = :u), "
-                    "(SELECT count(*) FROM nodes WHERE user_id = :u AND run_id IS NOT NULL)"
+                    "(SELECT count(*) FROM nodes WHERE user_id = :u AND NOT is_system)"
                 ),
                 {"u": account[0]},
             ).one()

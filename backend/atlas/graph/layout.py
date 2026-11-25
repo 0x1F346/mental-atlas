@@ -160,7 +160,8 @@ def place(
 
     # A short relaxation moves only the new landmarks until none overlap.
     movable = [item for item in ordered if not item.is_self]
-    pinned = [point for node_id, point in existing.items()]
+    # Sorted, so the result does not depend on the order the positions were read in.
+    pinned = sorted(existing.values())
     pinned += [positions[item.id] for item in ordered if item.is_self]
     for _ in range(RELAX_ROUNDS):
         moved = False

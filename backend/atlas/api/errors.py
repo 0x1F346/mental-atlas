@@ -1,5 +1,7 @@
 """API errors: a code and a message, never content (design rule 9)."""
 
+from typing import Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -60,7 +62,12 @@ def install_error_handlers(app: FastAPI) -> None:
         listed = ", ".join(field for field in fields if field) or "body"
         return _response(422, "invalid_request", f"Invalid or missing fields: {listed}.")
 
-    @app.exception_handler(Exception)
-    async def unexpected_error(request: Request, error: Exception) -> JSONResponse:
-        log.error("api.unhandled", error=error, method=request.method)
-        return _response(500, "internal_error", "Something went wrong.")
+    @app.middleware("http")
+    async def contain_errors(request: Request, call_next: Any) -> Any:
+        # An unhandled exception would be logged by the server with its message and
+        # traceback, which can carry request content. Log its class name only.
+        try:
+            return await call_next(request)
+        except Exception as error:
+            log.error("api.unhandled", error=error, method=request.method)
+            return _response(500, "internal_error", "Something went wrong.")

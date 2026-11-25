@@ -128,7 +128,7 @@ def key_terms(ctx: StageContext) -> list[str]:
             select(Node.name).where(
                 Node.type.in_([NodeType.PERSON.value, NodeType.GROUP.value]),
                 Node.state == RecordState.ACTIVE.value,
-                Node.run_id.is_not(None),
+                Node.is_system.is_(False),
             )
         )
     )

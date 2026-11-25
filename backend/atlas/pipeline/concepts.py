@@ -6,6 +6,7 @@ run, that the commit stage inserts in one transaction.
 
 import datetime
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -156,9 +157,14 @@ def _vector(value: object) -> list[float] | None:
 def load_existing(session: Session) -> dict[str, Candidate]:
     """Every node of the user's atlas a new mention could be the same as."""
     types = [t.value for t in CORE_TYPES]
-    nodes = session.scalars(
-        select(Node).where(Node.type.in_(types), Node.state != RecordState.MERGED.value)
-    ).all()
+    nodes = [
+        node
+        for node in session.scalars(
+            select(Node).where(Node.type.in_(types), Node.state != RecordState.MERGED.value)
+        )
+        # A retracted diagnosis must not come back by a later mention attaching to it.
+        if not (node.state == RecordState.RETRACTED.value and node.kind == DIAGNOSIS_KIND)
+    ]
     aliases: dict[str, set[str]] = {}
     for node_id, alias in session.execute(select(NodeAlias.node_id, NodeAlias.normalized_alias)):
         aliases.setdefault(str(node_id), set()).add(alias)
@@ -178,7 +184,7 @@ def load_existing(session: Session) -> dict[str, Candidate]:
             attributes=dict(node.attributes),
             aliases=aliases.get(str(node.id), set()) | {node.normalized_name},
             embedding=_vector(node.embedding),
-            is_system=node.run_id is None,
+            is_system=node.is_system,
             involved=involved.get(str(node.id), set()),
         )
         for node in nodes
@@ -247,11 +253,18 @@ def _clean_attributes(model: Any, value: object, drop: tuple[str, ...] = ()) -> 
     return dict(model(**known).model_dump(mode="json", exclude_none=True))
 
 
+_WORD = re.compile(r"[a-z0-9']+")
+
+
 def _names_it(name: str, statement: StatementDraft) -> bool:
-    """Whether the statement's own words contain a word of the concept's name (by stem)."""
-    said = f"{statement.quote} {statement.text}".casefold()
+    """Whether the speaker's own words (the verbatim quote) contain a word of the name.
+
+    Only the quote counts: the restated text is written by the model. Words match by
+    their opening letters, so "relief" is named by "relieved" but "joy" not by "enjoy".
+    """
+    said = _WORD.findall(statement.quote.casefold())
     stems = [word[:EXPLICIT_STEM] for word in normalize_name(name).split() if len(word) > 2]
-    return any(stem in said for stem in stems)
+    return any(word.startswith(stem) for stem in stems for word in said)
 
 
 def validate_concept(
@@ -284,21 +297,14 @@ def validate_concept(
         return "kind_not_allowed"
     if kind is None and node_type in KIND_REQUIRED:
         return "kind_required"
-    try:
-        attributes = _clean_attributes(
-            NODE_ATTRIBUTE_MODELS[node_type], item.get("attributes"), drop=("is_self",)
-        )
-    except ValidationError:
-        return "invalid_attributes"
-
-    # The AI never creates a diagnosis: it needs an explicit statement from the owner
-    # or the therapist. A feeling is explicit only if the speaker actually named it.
+    # The AI never creates a diagnosis: it needs a statement in which the owner or the
+    # therapist names it. A feeling is explicit only if the speaker actually named it.
     for link in evidence:
-        statement = by_id[link.statement_id]
+        named = _names_it(name, by_id[link.statement_id])
         if (
             node_type is NodeType.FEELING
             and link.basis == EvidenceBasis.EXPLICIT.value
-            and not _names_it(name, statement)
+            and not named
         ):
             link.basis = EvidenceBasis.IMPLIED.value
     if node_type is NodeType.TRAIT and kind == DIAGNOSIS_KIND:
@@ -307,10 +313,17 @@ def validate_concept(
             and link.stance == EvidenceStance.SUPPORTS.value
             and by_id[link.statement_id].speaker_role
             in (SpeakerRole.SELF.value, SpeakerRole.THERAPIST.value)
+            and _names_it(name, by_id[link.statement_id])
             for link in evidence
         )
         if not stated:
             return "diagnosis_without_explicit_statement"
+    try:
+        attributes = _clean_attributes(
+            NODE_ATTRIBUTE_MODELS[node_type], item.get("attributes"), drop=("is_self",)
+        )
+    except ValidationError:
+        return "invalid_attributes"
 
     also = item.get("also_called")
     names = [name] + [
@@ -468,7 +481,13 @@ def fold(
             "kind_required",
             "invalid_attributes",
         )
-        if section == "concepts" and vocabulary_misfit and isinstance(item, dict):
+        is_diagnosis = isinstance(item, dict) and item.get("kind") == DIAGNOSIS_KIND
+        if (
+            section == "concepts"
+            and vocabulary_misfit
+            and isinstance(item, dict)
+            and not is_diagnosis
+        ):
             salvaged = validate_unsorted(
                 {
                     **item,

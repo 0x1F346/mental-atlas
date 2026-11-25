@@ -49,11 +49,11 @@ def cancel_pending(session: Session, source_id: uuid.UUID) -> None:
     )
 
 
-def claim(worker: str, lease_seconds: int) -> ClaimedJob | None:
+def claim(worker: str, lease_seconds: int, max_attempts: int = 3) -> ClaimedJob | None:
     with anonymous_session() as session:
         row = session.execute(
-            text("SELECT job_id, user_id FROM atlas_claim_job(:worker, :lease)"),
-            {"worker": worker, "lease": lease_seconds},
+            text("SELECT job_id, user_id FROM atlas_claim_job(:worker, :lease, :attempts)"),
+            {"worker": worker, "lease": lease_seconds, "attempts": max_attempts},
         ).one_or_none()
     return ClaimedJob(job_id=row.job_id, user_id=row.user_id) if row else None
 

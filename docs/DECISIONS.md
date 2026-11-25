@@ -124,3 +124,27 @@ Entry format:
 - Reason: These are the parts of M6-T2 that do not depend on the hosting decision. The 30-day expiry keeps the plan's promise that deleted data leaves the backups.
 - Alternatives considered: Installing a launchd job; rejected as a change to the owner's machine that was not asked for.
 - Approved by owner: not needed for the scripts. M6-T1 awaits the owner's decision.
+
+## D-017 (2026-11-25) Independent review of the backend: what was fixed and what was left
+- Context: After M5 a separate reviewer read the API, database, retraction and pipeline code. It found no way for one user to reach another's rows, and eleven defects elsewhere.
+- Decision: Fixed, each with a regression test in `tests/test_review_fixes.py` unless noted:
+  1. A job cancelled by a reprocess or retraction while its stage ran used to finish anyway and queue the next stage. The runner now re-checks the job under a row lock and discards the stage's work. Confirming an upload locks the source row.
+  2. Two sources matched before either committed created duplicate concepts, and a concept deleted between matching and commit broke the commit. The commit now reuses a same-named concept created since matching, and sends the source back to the concepts stage when a reused concept has gone.
+  3. A diagnosis was accepted on the model's own `explicit` label. It now also needs the speaker's verbatim quote to contain a word of the diagnosis name, and a rejected diagnosis is never salvaged into unsorted.
+  4. The "did the speaker name this feeling" check read the model's restatement and matched inside words. It now reads the quote only and matches whole-word openings.
+  5. A retracted diagnosis could make every later commit that touched it fail. It now stays retracted and is not offered as a match.
+  6. A node with no run was treated as system-created, and deleting a source clears run ids, so an ordinary node could become permanent. Migration 0003 adds `nodes.is_system` (no dedicated test; covered by the existing retraction tests).
+  7. An event used only as another relationship's context was deleted on retraction. It is now kept (no dedicated test).
+  8. Deleting a source now also deletes the derived audio and raw transcript by their fixed keys, whether or not a database row records them (no dedicated test).
+  9. A job that kept outliving its lease was reclaimed forever; it is now failed after `ATLAS_JOB_MAX_ATTEMPTS`. A failed heartbeat no longer ends the heartbeat thread.
+  10. Sign-in attempts are counted before the password check, and idle entries are dropped from the limiter.
+  11. Database engines hide bound parameters, and unhandled API errors are caught before the server can log their message.
+- Left as they are:
+  - Matching by similarity (not by exact name) can still create a duplicate when two sources are processed at once. The plan assumes one source at a time; duplicates can be merged.
+  - A stage that uploads a file after its source was deleted leaves that file in storage until the bucket's lifecycle rule or a manual clean-up removes it.
+  - The sign-in limit is keyed on the connecting address. Behind a reverse proxy every client shares one address, so this needs the proxy's forwarded address before hosting.
+  - The logger accepts any single token of up to 80 characters as a code, so a one-word name passed as a field would be logged. No call site does this.
+  - `ATLAS_COOKIE_SECURE` defaults to false for local HTTP and must be set when serving over HTTPS.
+- Reason: The fixed items could corrupt the atlas, store an inference as a statement, or block deletion. The others are bounded and belong with the hosting work.
+- Alternatives considered: A unique constraint on concept names, rejected because two different people or events may share a name.
+- Approved by owner: not needed

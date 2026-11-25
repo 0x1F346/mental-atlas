@@ -18,7 +18,10 @@ from atlas.settings import get_settings
 
 @lru_cache
 def get_engine() -> Engine:
-    return create_engine(get_settings().database_url.get_secret_value(), pool_pre_ping=True)
+    # hide_parameters keeps bound values, which may be transcript text, out of error messages.
+    return create_engine(
+        get_settings().database_url.get_secret_value(), pool_pre_ping=True, hide_parameters=True
+    )
 
 
 def set_current_user(session: Session, user_id: uuid.UUID) -> None:

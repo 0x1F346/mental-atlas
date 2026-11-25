@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import secrets
 import time
-from collections import defaultdict, deque
+from collections import deque
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
@@ -38,21 +38,34 @@ def tokens_match(expected: str, given: str | None) -> bool:
 
 
 class RateLimiter:
-    """Blocks a key after too many failures in a minute. Held in memory: one API process."""
+    """Blocks a key after too many failed attempts in a minute. In memory: one API process.
+
+    An attempt is counted before the slow password check and forgiven if it succeeds,
+    so a burst of parallel guesses cannot all slip past the limit.
+    """
 
     def __init__(self, limit_per_minute: int) -> None:
         self._limit = limit_per_minute
-        self._failures: dict[str, deque[float]] = defaultdict(deque)
+        self._attempts: dict[str, deque[float]] = {}
 
     def blocked(self, key: str) -> bool:
         now = time.monotonic()
-        failures = self._failures[key]
-        while failures and now - failures[0] > 60:
-            failures.popleft()
-        return len(failures) >= self._limit
+        for known in [k for k, hits in self._attempts.items() if not hits or now - hits[-1] > 60]:
+            del self._attempts[known]
+        attempts = self._attempts.get(key)
+        if attempts is None:
+            return False
+        while attempts and now - attempts[0] > 60:
+            attempts.popleft()
+        return len(attempts) >= self._limit
 
-    def record_failure(self, key: str) -> None:
-        self._failures[key].append(time.monotonic())
+    def record_attempt(self, key: str) -> None:
+        self._attempts.setdefault(key, deque()).append(time.monotonic())
+
+    def forgive(self, key: str) -> None:
+        attempts = self._attempts.get(key)
+        if attempts:
+            attempts.pop()
 
     def reset(self) -> None:
-        self._failures.clear()
+        self._attempts.clear()

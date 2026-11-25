@@ -12,7 +12,7 @@ from atlas.db.ids import new_id
 from atlas.db.models import MediaFile, Run, Source
 from atlas.domain.generated.vocabulary import SourceKind, SourceStatus
 from atlas.pipeline import queue
-from atlas.pipeline.stages import STATUS_DURING, Stage
+from atlas.pipeline.stages import PIPELINE_VERSION, STATUS_DURING, Stage
 from atlas.providers.base import BlobStore
 
 TEXT_MIME = "text/plain; charset=utf-8"
@@ -166,8 +166,16 @@ def reprocess(session: Session, source: Source, stage: Stage, *, force: bool = F
 
 def retract(session: Session, source_id: uuid.UUID) -> list[str]:
     """Retract a source and everything derived from it. Returns storage keys to delete."""
+    source = session.get(Source, source_id)
+    user_id = source.user_id if source is not None else None
     queue.cancel_pending(session, source_id)
-    return atlas_store.retract_source(session, source_id).storage_keys
+    keys = atlas_store.retract_source(session, source_id).storage_keys
+    if user_id is not None:
+        # Files a stage may have written without yet recording them in the database.
+        prefix = f"{user_id}/{source_id}"
+        keys += [f"media/{prefix}/original", f"media/{prefix}/audio.m4a"]
+        keys += [f"raw/{prefix}/transcript-v{PIPELINE_VERSION}.json"]
+    return list(dict.fromkeys(keys))
 
 
 def is_settled(source: Source) -> bool:

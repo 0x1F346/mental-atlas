@@ -131,7 +131,7 @@ def load_graph(session: Session, *, include_unsorted: bool = False) -> InMemoryG
             last_seen_at=n.last_seen_at,
             life_area=areas.get(n.life_area_id) if n.life_area_id else None,
             life_area_weights=dict(n.life_area_weights),
-            is_system=n.run_id is None,
+            is_system=n.is_system,
         )
         for n in session.scalars(
             select(Node)

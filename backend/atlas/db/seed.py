@@ -73,6 +73,7 @@ def create_user(
             noticed_by=[NoticedBy.SELF.value],
             status=Status.STATED.value,
             schema_version=VOCABULARY_VERSION,
+            is_system=True,
         )
     )
     session.flush()
