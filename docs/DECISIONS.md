@@ -82,3 +82,38 @@ Entry format:
 - Reason: `direct` uses only documented behaviour. In `direct` mode the worker does hold one connection open for the length of the transcription, which the plan wanted to avoid; `poll` removes that once it has been checked against the live API.
 - Alternatives considered: A public webhook endpoint; rejected for V1 because local development has no public address.
 - Approved by owner: not needed. The owner should run a live smoke test, replace the fixture with a recorded response, and then decide on `poll`. Note that the key-term list adds a 20% surcharge per the reference.
+
+## D-011 (2026-11-25) Schema-constrained output uses structured outputs, not a forced tool call
+- Context: The plan specifies schema-constrained output through tool definitions. The current Claude models (including the default, `claude-sonnet-5-5`) reject forced tool use, so a tool call can no longer be required.
+- Decision: The tool schemas generated from the vocabulary are sent as a JSON schema in `output_config.format`. Numeric and length constraints that structured outputs does not accept are removed before sending and enforced in code. Requests are streamed. A declined request is retried on the provider's recommended fallback model (`fallbacks: "default"`), which `ATLAS_EXTRACTION_FALLBACKS=false` turns off. Extraction effort defaults to `medium` (`ATLAS_EXTRACTION_EFFORT`).
+- Reason: It is the supported way to guarantee schema-valid output on these models. Checked against the Anthropic API documentation on 2026-11-25.
+- Alternatives considered: `tool_choice: auto` with a strict tool, which does not guarantee a call is made.
+- Approved by owner: not needed. The adapter is tested against a stub client only; no live call has been made.
+
+## D-012 (2026-11-25) Extraction writes nothing until the commit stage
+- Context: The plan runs statements first, then concepts, and requires each source to commit statements, nodes, relationships and evidence in one transaction.
+- Decision: The pipeline has separate `statements`, `concepts`, `commit`, `embed` and `place` stages. The first two keep their validated output on their `runs` row; `commit` inserts everything in one transaction. Statements carry the statements run's id and concepts, relationships, evidence, aliases and match decisions carry the concepts run's id. Reprocessing is offered from `statements` or `concepts` (and the ingestion stages), not from `commit` onwards.
+- Reason: It keeps the all-or-nothing commit while letting a failed concepts stage be retried without repeating statement extraction.
+- Alternatives considered: Writing statements as soon as pass A finishes.
+- Approved by owner: not needed
+
+## D-013 (2026-11-25) Extraction rules added in code
+- Context: The plan asks for code-level validation and leaves several cases open.
+- Decision: (1) A concept that breaks the diagnosis rule is dropped and counted, never moved to unsorted. (2) A Feeling linked as `explicit` is downgraded to `implied` when none of its name's words appear in the cited statement, so an unnamed feeling cannot be stored as stated. (3) A therapist's statement is always kind `observation`; an owner's statement proposed as `observation` is sent to repair. (4) A Person named "me", "I" or similar is the owner's existing node. (5) Concept mentions may carry `also_called`, so two names for one person in the same window become aliases of one node. (6) An Event matches an existing one only when both have the same date and their involved people do not disagree; an undated event never matches. (7) Relationships that fail validation after repair are dropped and counted; only concepts go to unsorted.
+- Reason: Each closes a way for an inference to be stored as if someone had said it, or for two things to be merged into one.
+- Alternatives considered: Leaving these to the prompt.
+- Approved by owner: not needed. Rule 6 means the same event mentioned without a date in a later source becomes a second node; the owner may want this relaxed after the first real session.
+
+## D-014 (2026-11-25) Embedding provider not chosen; local hashed embedder is the default
+- Context: Choosing the embedding provider is an open question for the owner.
+- Decision: `atlas/providers/embeddings_http.py` speaks the common hosted embeddings request shape, configured by `ATLAS_EMBEDDING_BASE_URL`, `ATLAS_EMBEDDING_API_KEY`, `ATLAS_EMBEDDING_MODEL` and `ATLAS_EMBEDDING_DIMENSION`. Until those are set, live mode uses the local hashed bag-of-words embedder, which sends nothing outside but only recognises shared words. Vector columns have no fixed dimension, and every vector stores its model and dimension.
+- Reason: The pipeline must run before the owner chooses, and re-embedding is cheap at this scale.
+- Alternatives considered: Picking a provider for the owner.
+- Approved by owner: no, awaiting the owner's choice. Matching by similarity is weak until a real embedding model is configured; exact-name and alias matching are unaffected.
+
+## D-015 (2026-11-25) Evaluation: oracle run in place of the live scorecard
+- Context: M3 is done when the scorecard meets its targets. `make eval` calls the paid model, which needs the owner's approval.
+- Decision: `make eval-fake` replays each fixture's expected output through the real pipeline and scores the result. It meets every target, which shows the pipeline stores what a correct model would produce and that the scorecard measures it. In a live run, concept precision is judged by a model call per stored concept; in the oracle run it counts a stored concept as supported when it matches an expected one.
+- Reason: It verifies everything that can be verified without a paid call.
+- Alternatives considered: None available without the owner.
+- Approved by owner: no. The M3 exit condition is not met until the owner runs `make eval` and the live scorecard meets its targets. Prompts `statements_v1`, `concepts_v1`, `match_v1` and `speaker_roles_v1` have never been run against a live model.

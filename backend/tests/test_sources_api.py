@@ -3,6 +3,7 @@
 import uuid
 
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine, text
 
 from atlas.providers.base import Providers
 from atlas.providers.fakes import FakeBlobStore, FakeTranscriber
@@ -182,6 +183,37 @@ def test_reprocess_from_a_named_stage(signed_in: TestClient, providers: Provider
     assert len(signed_in.get(f"{API}/sources/{source_id}/transcript").json()["segments"]) == 2
     bad = signed_in.post(f"{API}/sources/{source_id}/reprocess", json={"stage": "everything"})
     assert bad.status_code == 422
+    late = signed_in.post(f"{API}/sources/{source_id}/reprocess", json={"stage": "commit"})
+    assert late.status_code == 422 and late.json()["error"]["code"] == "stage_not_reprocessable"
+
+
+def test_extracted_concepts_survive_reprocessing_and_go_with_the_source(
+    signed_in: TestClient,
+    providers: Providers,
+    owner_engine: Engine,
+    account: tuple[uuid.UUID, str],
+) -> None:
+    def rows() -> tuple[int, int]:
+        with owner_engine.connect() as connection:
+            counted = connection.execute(
+                text(
+                    "SELECT (SELECT count(*) FROM statements WHERE user_id = :u), "
+                    "(SELECT count(*) FROM nodes WHERE user_id = :u AND run_id IS NOT NULL)"
+                ),
+                {"u": account[0]},
+            ).one()
+        return int(counted[0]), int(counted[1])
+
+    source_id = create_text(signed_in)
+    run_pipeline(providers)
+    first = rows()
+    assert first[0] >= 2 and first[1] >= 1  # The keyword fake finds "dread" at least.
+
+    signed_in.post(f"{API}/sources/{source_id}/reprocess", json={"stage": "statements"})
+    run_pipeline(providers)
+    assert rows() == first
+    assert signed_in.delete(f"{API}/sources/{source_id}").status_code == 204
+    assert rows() == (0, 0)
 
 
 def test_deleting_a_source_removes_its_rows_and_files(
@@ -213,7 +245,7 @@ def test_another_users_sources_are_invisible(
     other_email = f"user-{uuid.uuid4().hex[:12]}@example.com"
     make_user(other_email)
     assert account[1] != other_email
-    from sqlalchemy import create_engine, text
+    from sqlalchemy import create_engine
 
     from atlas.api.security import hash_password
     from atlas.settings import get_settings

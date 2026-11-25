@@ -29,6 +29,17 @@ log = get_logger("atlas.api.sources")
 
 ProvidersDep = Annotated[Providers, Depends(get_providers)]
 UPLOAD_TYPES = ("audio/", "video/", "text/plain")
+# The commit, embed and place stages only replay the concepts stage's output.
+REPROCESSABLE = frozenset(
+    {
+        Stage.MEDIA,
+        Stage.TRANSCRIBE,
+        Stage.SEGMENT_TEXT,
+        Stage.SPEAKERS,
+        Stage.STATEMENTS,
+        Stage.CONCEPTS,
+    }
+)
 
 
 class SourceCreate(BaseModel):
@@ -315,6 +326,8 @@ def set_speakers(source_id: uuid.UUID, body: SpeakerRoles, auth: AuthDep, db: Db
 @router.post("/sources/{source_id}/reprocess")
 def reprocess(source_id: uuid.UUID, body: ReprocessRequest, db: DbDep) -> SourceOut:
     source = _source(db, source_id)
+    if body.stage not in REPROCESSABLE:
+        raise ApiError(422, "stage_not_reprocessable", "Reprocess from the concepts stage instead.")
     if source.status == SourceStatus.UPLOADED.value:
         raise ApiError(409, "upload_missing", "The file has not been uploaded yet.")
     has_speakers = db.scalars(select(Speaker.id).where(Speaker.source_id == source.id)).first()

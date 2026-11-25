@@ -15,7 +15,7 @@ from atlas.pipeline import queue, sources
 from atlas.pipeline.handlers import HANDLERS
 from atlas.pipeline.runner import StageContext, drain, work_once
 from atlas.pipeline.sources import DuplicateSource
-from atlas.pipeline.stages import Next, Outcome, Stage, StageError
+from atlas.pipeline.stages import Outcome, Stage, StageError
 from atlas.providers.base import Providers
 from atlas.providers.fakes import FakeBlobStore, FakeTranscriber
 from atlas.settings import get_settings
@@ -312,8 +312,3 @@ def test_unreadable_media_fails_with_a_code(
     run = db.scalars(select(Run).where(Run.source_id == source_id)).one()
     assert run.error == "media_unreadable"
     assert isinstance(providers.blobs, FakeBlobStore)
-
-
-def test_stage_placeholder_is_only_for_m2() -> None:
-    assert HANDLERS[Stage.STATEMENTS].__name__ == "_extraction_not_built"
-    assert isinstance(HANDLERS[Stage.STATEMENTS](None), Next)  # type: ignore[arg-type]

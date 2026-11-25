@@ -57,6 +57,17 @@ def migrated_database(owner_engine: Engine) -> None:
     command.upgrade(config, "head")
 
 
+@pytest.fixture(autouse=True)
+def no_leftover_jobs(owner_engine: Engine) -> None:
+    """The queue serves every user, so a job left by one test must not run in the next."""
+    with owner_engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE jobs SET status = 'failed', error = 'test_ended' WHERE status IN ('queued', 'running')"
+            )
+        )
+
+
 @pytest.fixture
 def engine() -> Engine:
     return get_engine()

@@ -406,6 +406,7 @@ def render_extraction_schema(v: Vocabulary) -> str:
                                 "existing_id": {"type": ["string", "null"], "description": "The id of a shortlisted concept this mention is the same as, or null for a new concept."},
                                 "type": {"type": "string", "enum": list(v.core)},
                                 "name": {"type": "string"},
+                                "also_called": {"type": "array", "items": {"type": "string"}, "description": "Other names the speakers use for this same concept in these statements, such as a person's first name alongside 'my mum'."},
                                 "description": {"type": "string", "description": "One short sentence."},
                                 "kind": {"type": ["string", "null"], "enum": [*all_kinds, None]},
                                 "attributes": {"type": "object", "additionalProperties": False, "properties": attribute_properties},
