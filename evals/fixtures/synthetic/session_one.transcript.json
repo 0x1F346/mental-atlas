@@ -1,0 +1,23 @@
+{
+  "kind": "therapy_session",
+  "title": "Synthetic session one",
+  "occurred_at": "2026-01-12T10:00:00Z",
+  "turns": [
+    ["therapist", "Good to see you. Did you find parking all right?"],
+    ["self", "Yes, fine, thanks."],
+    ["therapist", "So what has been on your mind this week?"],
+    ["self", "I had my review with Dana on Thursday, and I felt dread for days before it."],
+    ["therapist", "What happened right before the dread started?"],
+    ["self", "Dana sent a message saying we need to talk about the roadmap. After that I went quiet and stopped replying to her for two days."],
+    ["therapist", "It sounds like you expect to be found out."],
+    ["self", "Maybe. When I was nine my father read my school report out loud at dinner and laughed at it. I could not breathe."],
+    ["therapist", "That sounds like a moment where being seen meant being laughed at."],
+    ["self", "I am good at my job, I know that. But in the review I kept thinking I am not good enough for this job."],
+    ["therapist", "Your GP diagnosed generalised anxiety disorder last spring, is that right?"],
+    ["self", "Yes. And lately I have been checking the front door lock five or six times before bed."],
+    ["therapist", "What do you want to do before the planning offsite next month?"],
+    ["self", "The offsite is on the ninth of February. I want to answer Dana the same day instead of hiding."],
+    ["therapist", "Let's stop there. Same time next week?"],
+    ["self", "Yes, Tuesday at ten works."]
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "kind": "therapy_session",
+  "title": "Synthetic session two",
+  "occurred_at": "2026-01-19T10:00:00Z",
+  "turns": [
+    ["therapist", "How was the week?"],
+    ["self", "Better. I replied to Dana within the hour on Wednesday and nothing bad happened."],
+    ["therapist", "What made that possible?"],
+    ["self", "I went for a run first. Running calms me down before hard conversations."],
+    ["therapist", "You sound relieved."],
+    ["self", "I called my mum on Sunday. Ruth always asks whether I am still at that job, and I felt small again."],
+    ["therapist", "What do you make of that?"],
+    ["self", "Ruth and my father both think a real job is one where you never complain."],
+    ["therapist", "And what do you think?"],
+    ["self", "I used to believe that too. Now I think I need to feel safe to say when something is wrong."],
+    ["therapist", "It strikes me that you treat that need as a weakness."],
+    ["self", "I value honesty more than looking fine."],
+    ["therapist", "We are at time. I am away on the second, so let us meet on the ninth."]
+  ]
+}

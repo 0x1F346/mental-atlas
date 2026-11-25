@@ -1,0 +1,34 @@
+{
+  "statements": [
+    {"key": "p0a", "segment": 0, "quote": "Couldn't sleep", "kind": "report", "text": "I couldn't sleep tonight."},
+    {"key": "p0b", "segment": 0, "quote": "The offsite is in less than three weeks and my stomach has been in knots since Monday", "kind": "feeling", "text": "The offsite is in less than three weeks and my stomach has been in knots since Monday.", "about": "since Monday"},
+    {"key": "p1", "segment": 1, "quote": "I keep telling myself I am fine, but I rewrote one slide eleven times tonight", "kind": "report", "text": "I keep telling myself I am fine, but I rewrote one slide eleven times tonight."},
+    {"key": "p2a", "segment": 2, "quote": "Sam says I should just ask Dana what she actually wants from the roadmap", "kind": "report", "text": "Sam says I should just ask Dana what she actually wants from the roadmap."},
+    {"key": "p2b", "segment": 2, "quote": "Sam is probably right", "kind": "reflection", "text": "Sam is probably right that I should ask Dana what she wants from the roadmap."},
+    {"key": "p3", "segment": 3, "quote": "Tomorrow I will send Dana three questions before lunch", "kind": "intention", "text": "Tomorrow I will send Dana three questions before lunch.", "about": "tomorrow"}
+  ],
+  "concepts": [
+    {"key": "offsite", "type": "event", "name": "Planning offsite, February 2026", "match": ["offsite"], "status": "stated", "home": "work", "weights": {"work": 1.0}, "attributes": {"precision": "approximate", "occurrence": "planned"},
+     "evidence": [["p0b", "explicit", "supports"]]},
+    {"key": "knots", "type": "sensation", "name": "stomach in knots", "match": ["stomach", "knot"], "status": "stated", "home": "body_health", "weights": {"body_health": 0.6, "work": 0.4}, "attributes": {"body_area": "stomach"},
+     "evidence": [["p0b", "explicit", "supports"]]},
+    {"key": "anxiety", "type": "feeling", "name": "anxiety", "match": ["anxi", "worry", "worried", "nervous", "dread", "fear", "stress"], "status": "hypothesis", "home": "work", "weights": {"work": 0.8, "self": 0.2},
+     "evidence": [["p0b", "implied", "supports"], ["p1", "implied", "supports"]]},
+    {"key": "rewriting", "type": "behaviour", "name": "rewriting the same slide over and over", "match": ["rewrit", "slide", "perfection"], "status": "stated", "home": "work", "weights": {"work": 1.0},
+     "evidence": [["p1", "explicit", "supports"]]},
+    {"key": "sam", "type": "person", "name": "Sam", "match": ["sam"], "status": "stated", "home": "self", "weights": {"work": 0.4, "friendships": 0.4, "self": 0.2},
+     "evidence": [["p2a", "explicit", "supports"], ["p2b", "explicit", "supports"]], "skip_home": true},
+    {"key": "dana", "type": "person", "name": "Dana", "match": ["dana"], "status": "stated", "home": "work", "weights": {"work": 1.0},
+     "evidence": [["p2a", "explicit", "supports"], ["p3", "explicit", "supports"]]},
+    {"key": "questions_goal", "type": "goal", "name": "Send Dana three questions before lunch", "match": ["question", "ask dana"], "status": "stated", "home": "work", "weights": {"work": 1.0}, "attributes": {"progress": "open"},
+     "evidence": [["p3", "explicit", "supports"]]}
+  ],
+  "relationships": [
+    {"type": "HOLDS", "from": "me", "to": "questions_goal", "evidence": [["p3", "explicit", "supports"]]},
+    {"type": "ABOUT", "from": "questions_goal", "to": "dana", "evidence": [["p3", "explicit", "supports"]]}
+  ],
+  "silent_segments": [],
+  "forbidden": [
+    {"type": "trait", "kind": "diagnosis", "match": ["insomnia", "anxiety disorder", "ocd"]}
+  ]
+}

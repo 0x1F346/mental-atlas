@@ -1,0 +1,53 @@
+{
+  "statements": [
+    {"key": "s1", "segment": 1, "quote": "I replied to Dana within the hour on Wednesday and nothing bad happened", "kind": "report", "text": "I replied to Dana within the hour on Wednesday and nothing bad happened.", "about": "Wednesday"},
+    {"key": "s3a", "segment": 3, "quote": "I went for a run first", "kind": "report", "text": "I went for a run before replying to Dana."},
+    {"key": "s3b", "segment": 3, "quote": "Running calms me down before hard conversations", "kind": "reflection", "text": "Running calms me down before hard conversations."},
+    {"key": "s4", "segment": 4, "quote": "You sound relieved", "kind": "observation", "text": "The therapist observed that I sound relieved."},
+    {"key": "s5a", "segment": 5, "quote": "I called my mum on Sunday", "kind": "report", "text": "I called my mum on Sunday.", "about": "Sunday"},
+    {"key": "s5b", "segment": 5, "quote": "Ruth always asks whether I am still at that job, and I felt small again", "kind": "feeling", "text": "My mum, Ruth, always asks whether I am still at that job, and I felt small again."},
+    {"key": "s7", "segment": 7, "quote": "Ruth and my father both think a real job is one where you never complain", "kind": "report", "text": "My mum Ruth and my father both think a real job is one where you never complain."},
+    {"key": "s9a", "segment": 9, "quote": "I used to believe that too", "kind": "reflection", "text": "I used to believe that a real job is one where you never complain."},
+    {"key": "s9b", "segment": 9, "quote": "Now I think I need to feel safe to say when something is wrong", "kind": "reflection", "text": "I now think I need to feel safe to say when something is wrong."},
+    {"key": "s10", "segment": 10, "quote": "It strikes me that you treat that need as a weakness", "kind": "observation", "text": "The therapist observed that I treat my need to feel safe speaking up as a weakness."},
+    {"key": "s11", "segment": 11, "quote": "I value honesty more than looking fine", "kind": "reflection", "text": "I value honesty more than looking fine."}
+  ],
+  "concepts": [
+    {"key": "dana", "type": "person", "name": "Dana", "match": ["dana"], "status": "stated", "home": "work", "weights": {"work": 1.0},
+     "evidence": [["s1", "explicit", "supports"]]},
+    {"key": "mum", "type": "person", "name": "my mum", "aliases": ["Ruth"], "match": ["mum", "ruth", "mother"], "status": "stated", "home": "family", "weights": {"family": 1.0}, "attributes": {"relationship_to_owner": "mother"},
+     "evidence": [["s5a", "explicit", "supports"], ["s5b", "explicit", "supports"], ["s7", "explicit", "supports"]]},
+    {"key": "father", "type": "person", "name": "my father", "match": ["father", "dad"], "status": "stated", "home": "family", "weights": {"family": 1.0}, "attributes": {"relationship_to_owner": "father"},
+     "evidence": [["s7", "explicit", "supports"]]},
+    {"key": "running", "type": "behaviour", "kind": "coping_tool", "name": "going for a run", "match": ["run"], "status": "stated", "home": "body_health", "weights": {"body_health": 0.6, "work": 0.4},
+     "evidence": [["s3a", "explicit", "supports"], ["s3b", "explicit", "supports"]]},
+    {"key": "replying", "type": "behaviour", "name": "replying promptly", "match": ["repl", "answer"], "status": "stated", "home": "work", "weights": {"work": 1.0},
+     "evidence": [["s1", "explicit", "supports"]]},
+    {"key": "calm", "type": "feeling", "name": "calm", "match": ["calm"], "status": "stated", "home": "body_health", "weights": {"body_health": 0.5, "work": 0.5},
+     "evidence": [["s3b", "explicit", "supports"]], "skip_home": true},
+    {"key": "relief", "type": "feeling", "name": "relief", "match": ["relie"], "status": "observed", "home": "work", "weights": {"work": 0.7, "self": 0.3},
+     "evidence": [["s4", "explicit", "supports"]]},
+    {"key": "small", "type": "feeling", "name": "feeling small", "match": ["small"], "status": "stated", "home": "family", "weights": {"family": 0.8, "self": 0.2},
+     "evidence": [["s5b", "explicit", "supports"]]},
+    {"key": "never_complain", "type": "belief", "name": "A real job is one where you never complain", "match": ["never complain", "real job"], "status": "stated", "home": "work", "weights": {"work": 0.5, "family": 0.5},
+     "evidence": [["s7", "explicit", "supports"], ["s9a", "explicit", "supports"]]},
+    {"key": "safe", "type": "need", "name": "to feel safe to say when something is wrong", "match": ["safe"], "status": "stated", "home": "self", "weights": {"self": 0.5, "work": 0.5},
+     "evidence": [["s9b", "explicit", "supports"]]},
+    {"key": "need_is_weakness", "type": "belief", "name": "Needing to feel safe is a weakness", "match": ["weakness"], "status": "observed", "home": "self", "weights": {"self": 1.0},
+     "evidence": [["s10", "explicit", "supports"]]},
+    {"key": "honesty", "type": "value", "name": "honesty", "match": ["honest"], "status": "stated", "home": "self", "weights": {"self": 1.0},
+     "evidence": [["s11", "explicit", "supports"]]}
+  ],
+  "relationships": [
+    {"type": "HELPS", "from": "running", "to": "calm", "evidence": [["s3b", "explicit", "supports"]]},
+    {"type": "HOLDS", "from": "mum", "to": "never_complain", "evidence": [["s7", "explicit", "supports"]]},
+    {"type": "HOLDS", "from": "father", "to": "never_complain", "evidence": [["s7", "explicit", "supports"]]},
+    {"type": "HOLDS", "from": "me", "to": "never_complain", "valid_to": "2026-01-19", "evidence": [["s9a", "explicit", "supports"]]},
+    {"type": "CAME_FROM", "from": "never_complain", "to": "mum", "evidence": [["s7", "implied", "supports"]]},
+    {"type": "ABOUT", "from": "small", "to": "mum", "evidence": [["s5b", "explicit", "supports"]]},
+    {"type": "HAS", "from": "me", "to": "safe", "evidence": [["s9b", "explicit", "supports"]]},
+    {"type": "HOLDS", "from": "me", "to": "honesty", "evidence": [["s11", "explicit", "supports"]]}
+  ],
+  "silent_segments": [0, 2, 6, 8, 12],
+  "forbidden": []
+}
