@@ -210,3 +210,390 @@ button.danger {
   font-weight: 600;
   font-size: 0.85rem;
 }
+
+/* --- Map ---------------------------------------------------------------- */
+
+.map-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 49px);
+}
+
+.map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  font-size: 0.85rem;
+}
+
+.map-toolbar fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.map-toolbar legend {
+  float: left;
+  padding: 0 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.chip {
+  font-size: 0.85rem;
+}
+
+.map-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.map-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-frame,
+.map-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.map-svg {
+  display: block;
+  background: #dfe9ea;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-empty {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  z-index: 1;
+}
+
+.map-controls {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.map-controls button {
+  width: 2.2rem;
+  padding: 0.3rem 0;
+  background: var(--card);
+}
+
+.region {
+  stroke: #b9b3a3;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.region-name {
+  text-anchor: middle;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: #6f6a5d;
+  pointer-events: none;
+}
+
+.landmark {
+  cursor: pointer;
+}
+
+.landmark:focus,
+.relationship-hit:focus {
+  outline: none;
+}
+
+.relationship-hit:focus-visible {
+  stroke: rgba(0, 0, 0, 0.15);
+}
+
+.landmark:focus-visible .landmark-disc {
+  stroke: #000;
+  stroke-width: 3;
+}
+
+.landmark-disc {
+  fill: #fffdf8;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.landmark-disc.status-hypothesis {
+  stroke-dasharray: 4 3;
+  fill: #fbf7ec;
+}
+
+.landmark-dot {
+  stroke-width: 1.5;
+}
+
+.landmark-dot.status-hypothesis {
+  stroke-dasharray: 2 2;
+}
+
+.landmark-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.landmark-halo {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.landmark-icon {
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+.landmark-label {
+  text-anchor: middle;
+  font-size: 15px;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: #fffdf8;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.relationship {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
+.relationship.hypothesis {
+  stroke-dasharray: 6 5;
+}
+
+.relationship.active {
+  stroke: var(--ink);
+}
+
+.relationship-hit {
+  stroke: transparent;
+  stroke-width: 16;
+  cursor: pointer;
+}
+
+.legend {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  max-width: 17rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.legend ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.15rem 0.5rem;
+}
+
+.legend ul:first-of-type {
+  grid-template-columns: 1fr;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend p {
+  margin: 0.3rem 0;
+}
+
+.evidence-panel {
+  position: relative;
+  width: 24rem;
+  max-width: 100%;
+  overflow-y: auto;
+  padding: 1rem 1.1rem 2rem;
+  border-left: 1px solid var(--line);
+  background: var(--card);
+}
+
+.evidence-panel .close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.evidence-panel h2 {
+  font-size: 1.25rem;
+  margin: 0.1rem 2rem 0.4rem 0;
+}
+
+.evidence-panel h3 {
+  font-size: 0.95rem;
+  margin: 1.2rem 0 0.4rem;
+}
+
+.evidence-panel h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0.5rem 0 0.15rem;
+}
+
+.evidence-panel .kind {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.status-line {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: #eef4f4;
+  font-size: 0.9rem;
+}
+
+.status-line.hypothesis {
+  border-left: 3px dashed var(--danger);
+  background: #fbf1ea;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.15rem 0.9rem;
+  margin: 0.6rem 0;
+  font-size: 0.88rem;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.related-group ul,
+.quotes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.related-group li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+button.linklike {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  text-align: left;
+}
+
+button.linklike.muted {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+button.small {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: white;
+}
+
+.tag.hypothesis,
+.tag.basis-implied,
+.tag.stance-contradicts {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.quote {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.quote blockquote {
+  margin: 0;
+  font-size: 0.97rem;
+}
+
+.quote.stance-contradicts blockquote {
+  border-left: 3px solid var(--danger);
+  padding-left: 0.5rem;
+}
+
+.quote-meta {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.quote-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 760px) {
+  .map-body {
+    flex-direction: column;
+  }
+
+  .evidence-panel {
+    width: 100%;
+    max-height: 50vh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}

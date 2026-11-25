@@ -42,8 +42,9 @@ GraphDep = Annotated[GraphStore, Depends(graph_store)]
 class Region(BaseModel):
     key: LifeArea
     name: str
-    anchor: tuple[float, float]
-    polygon: list[tuple[float, float]]
+    # Points are [x, y] pairs in map units.
+    anchor: list[float]
+    polygon: list[list[float]]
 
 
 class Landmark(BaseModel):

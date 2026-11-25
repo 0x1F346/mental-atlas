@@ -530,18 +530,12 @@ export interface components {
         /** Region */
         Region: {
             /** Anchor */
-            anchor: [
-                number,
-                number
-            ];
+            anchor: number[];
             key: components["schemas"]["LifeArea"];
             /** Name */
             name: string;
             /** Polygon */
-            polygon: [
-                number,
-                number
-            ][];
+            polygon: number[][];
         };
         /** RelationshipOut */
         RelationshipOut: {

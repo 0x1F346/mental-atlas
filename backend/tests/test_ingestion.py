@@ -223,7 +223,13 @@ def test_a_failed_stage_is_recorded_and_can_be_retried_alone(
     source_id = upload_audio(user_id, providers, audio_bytes, tmp_path)
     drain({**HANDLERS, Stage.SPEAKERS: broken}, providers, get_settings())
 
-    assert status_of(db, source_id) == "failed"
+    # This assertion failed once in about fifteen runs and could not be reproduced; the
+    # message lists what each stage did so the next occurrence can be diagnosed.
+    stages = [
+        (r.kind, r.status, r.error)
+        for r in db.scalars(select(Run).where(Run.source_id == source_id))
+    ]
+    assert status_of(db, source_id) == "failed", stages
     run = db.scalars(select(Run).where(Run.source_id == source_id, Run.kind == "speakers")).one()
     assert (run.status, run.error) == ("failed", "invented_failure")
     # Nothing the failed stage did was kept, and the earlier stages' output is intact.

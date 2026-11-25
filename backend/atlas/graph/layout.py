@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from atlas.domain.generated.vocabulary import LifeArea
 from atlas.graph.geometry import CENTRE, Geometry, Point
 
-MIN_DISTANCE = 30.0  # No two landmarks sit closer than this.
+MIN_DISTANCE = 36.0  # No two landmarks sit closer than this.
 BORDER_PULL_WEIGHT = 0.3  # A second area holding this much weight pulls the landmark.
 BORDER_PULL = 0.6  # How far towards that border, as a share of the way.
 RELAX_ROUNDS = 120

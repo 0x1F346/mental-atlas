@@ -1,6 +1,7 @@
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider, useAuth } from './auth'
+import MapPage from './map/MapPage'
 import LoginPage from './sources/LoginPage'
 import SourcePage from './sources/SourcePage'
 import SourcesPage from './sources/SourcesPage'
@@ -26,22 +27,13 @@ function Shell() {
   )
 }
 
-function MapPlaceholder() {
-  return (
-    <main className="page">
-      <h1>Map</h1>
-      <p className="muted">The map arrives in milestone 5.</p>
-    </main>
-  )
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Shell />}>
-            <Route path="/" element={<MapPlaceholder />} />
+            <Route path="/" element={<MapPage />} />
             <Route path="/sources" element={<SourcesPage />} />
             <Route path="/sources/:sourceId" element={<SourcePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
