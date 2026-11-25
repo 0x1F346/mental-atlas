@@ -46,6 +46,6 @@ def test_fake_embedder_is_deterministic_and_places_similar_text_closer() -> None
 
 
 def test_settings_choose_fakes_by_default() -> None:
-    providers = build_providers(Settings(_env_file=None, blob_store="memory"))  # type: ignore[call-arg]
+    providers = build_providers(Settings(_env_file=None, blob_store="memory"))
     assert isinstance(providers.blobs, FakeBlobStore)
     assert isinstance(providers.transcriber, FakeTranscriber)

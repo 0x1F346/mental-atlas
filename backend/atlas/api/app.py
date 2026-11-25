@@ -3,7 +3,7 @@
 from fastapi import APIRouter, FastAPI
 
 from atlas.api.errors import ErrorResponse, install_error_handlers
-from atlas.api.routes import auth
+from atlas.api.routes import auth, sources
 
 API_PREFIX = "/api/v1"
 
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
     app.include_router(health_router, prefix=API_PREFIX, tags=["health"])
     app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(sources.router, prefix=API_PREFIX)
     return app
 
 

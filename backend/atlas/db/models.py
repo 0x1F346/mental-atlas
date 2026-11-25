@@ -95,6 +95,22 @@ class Run(Row):
     finished_at: Mapped[datetime.datetime | None]
 
 
+class Job(Row):
+    """One queued pipeline stage for one source. Claimed through atlas_claim_job()."""
+
+    __tablename__ = "jobs"
+
+    source_id: Mapped[uuid.UUID] = mapped_column(_fk("sources.id"))
+    stage: Mapped[str]
+    status: Mapped[str] = mapped_column(default="queued", server_default="queued")
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    run_after: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+    locked_at: Mapped[datetime.datetime | None]
+    locked_by: Mapped[str | None]
+    payload: Mapped[Json] = mapped_column(default=dict, server_default="{}")
+    error: Mapped[str | None]
+
+
 # --- Layer 1: sources -------------------------------------------------------
 
 
@@ -154,6 +170,8 @@ class Segment(Row):
     start_char: Mapped[int]
     end_char: Mapped[int]
     text: Mapped[str]
+    # [[char offset in text, start_ms, end_ms], ...] per word, to find the moment of a quote.
+    words: Mapped[list[Any] | None] = mapped_column(JSONB)
 
 
 # --- Layer 2: statements ----------------------------------------------------

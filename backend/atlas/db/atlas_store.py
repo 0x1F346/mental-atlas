@@ -22,6 +22,7 @@ from atlas.db.models import (
     Run,
     Source,
     Statement,
+    Transcript,
 )
 from atlas.domain import rules
 from atlas.domain.generated.vocabulary import (
@@ -269,7 +270,13 @@ def retract_source(session: Session, source_id: uuid.UUID) -> Retraction:
         total.edges_marked += part.edges_marked
     total.storage_keys = list(
         session.scalars(select(MediaFile.storage_key).where(MediaFile.source_id == source_id))
-    )
+    ) + [
+        key
+        for key in session.scalars(
+            select(Transcript.raw_response_key).where(Transcript.source_id == source_id)
+        )
+        if key
+    ]
     session.execute(delete(Source).where(Source.id == source_id))
     session.flush()
     session.expire_all()
