@@ -2,9 +2,9 @@
 
 ## Now
 - Milestone: M0 Foundations
-- Current task: M0-T1 (done, awaiting the owner's review)
-- Next step: After the owner approves the memory setup, start M0-T2 (repository skeleton, Makefile and runners).
-- Blocked on: the owner's review of M0-T1, and the plan being saved as Markdown (see Known issues)
+- Current task: M0-T2
+- Next step: Repository skeleton, Makefile and runners.
+- Blocked on: nothing. Unattended build authorised, see D-003.
 
 ## Milestones
 - [ ] M0 Foundations
@@ -32,5 +32,5 @@ Done when a fresh clone runs `make dev` and serves a health endpoint and an empt
 - Next: Owner's review, then M0-T2.
 
 ## Known issues
-- The plan is at `docs/plan/IMPLEMENTATION_PLAN.pdf`, not `docs/plan/IMPLEMENTATION_PLAN.md`. `CLAUDE.md` and the session-start skill point at the `.md` path. The owner needs to export the doc as Markdown to that path. The PDF is not committed.
+- `docs/plan/IMPLEMENTATION_PLAN.md` is a text extract of the PDF, not the owner's Markdown export (D-002).
 - Setup step 8 is unconfirmed: the owner should run `/context all` (or `/memory`) in a new session and check that `CLAUDE.md` is listed.
