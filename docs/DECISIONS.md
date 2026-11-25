@@ -75,3 +75,10 @@ Entry format:
 - Reason: Keeps the application role unable to bypass row-level security while still allowing sign-in.
 - Alternatives considered: A second, privileged database role for the API.
 - Approved by owner: not needed
+
+## D-010 (2026-11-25) ElevenLabs adapter: direct mode by default, untested against the live API
+- Context: The plan wants the adapter to hide whether the provider answers directly or by callback, and wants M2-T5 tested against a recorded response from a synthetic clip. Live calls need the owner's key and approval. The API reference documents an early-return mode (`webhook=true`) and a get-by-id endpoint, but not what that endpoint returns while work is in progress.
+- Decision: The adapter supports two modes behind the same `submit`/`fetch` interface. `direct` (the default) sends one request and waits for the transcript. `poll` sends `webhook=true` and then asks for the transcript by id, reading any non-200 answer as "not ready". The test fixture `tests/recorded/elevenlabs_scribe_synthetic.json` was built by hand from the API reference, not recorded.
+- Reason: `direct` uses only documented behaviour. In `direct` mode the worker does hold one connection open for the length of the transcription, which the plan wanted to avoid; `poll` removes that once it has been checked against the live API.
+- Alternatives considered: A public webhook endpoint; rejected for V1 because local development has no public address.
+- Approved by owner: not needed. The owner should run a live smoke test, replace the fixture with a recorded response, and then decide on `poll`. Note that the key-term list adds a 20% surcharge per the reference.

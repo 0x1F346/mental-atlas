@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     extraction_model: str = "claude-sonnet-5-5"
     small_model: str = "claude-haiku-5-5"
     transcription_model: str = "scribe_v3"
+    # "direct" waits for the transcript in one request; "poll" submits and asks again later.
+    transcription_mode: Literal["direct", "poll"] = "direct"
+    # Zero-retention mode at ElevenLabs (enterprise accounts only).
+    transcription_zero_retention: bool = False
     embedding_model: str = "fake-embedding"
     embedding_dimension: int = 1024
 
