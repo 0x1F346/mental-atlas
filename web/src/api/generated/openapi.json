@@ -666,16 +666,9 @@
       "Region": {
         "properties": {
           "anchor": {
-            "maxItems": 2,
-            "minItems": 2,
-            "prefixItems": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ],
+            "items": {
+              "type": "number"
+            },
             "title": "Anchor",
             "type": "array"
           },
@@ -688,16 +681,9 @@
           },
           "polygon": {
             "items": {
-              "maxItems": 2,
-              "minItems": 2,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
+              "items": {
+                "type": "number"
+              },
               "type": "array"
             },
             "title": "Polygon",

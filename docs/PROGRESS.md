@@ -1,9 +1,9 @@
 # Progress
 
 ## Now
-- Milestone: M5 Web map
-- Current task: M5-T1
-- Next step: MapRenderer with regions, landmarks, zoom levels and labels.
+- Milestone: M6 First real session
+- Current task: M6-T2 (backups); M6-T1, M6-T3 and M6-T4 need the owner
+- Next step: Backup scripts that need no hosting decision, then stop for the owner.
 - Blocked on: nothing for M4 and M5. The owner must run `make eval` (paid) to close M3, see D-015.
 
 ## Milestones
@@ -12,17 +12,17 @@
 - [x] M2 Ingestion
 - [ ] M3 Extraction (built and merged; live scorecard not yet run, see D-015)
 - [x] M4 Map layout and read API
-- [ ] M5 Web map
+- [x] M5 Web map
 - [ ] M6 First real session
 
 ## Tasks in the current milestone
-- [ ] M5-T1: `MapRenderer` with regions, landmarks, zoom levels and labels.
-- [ ] M5-T2: Type icons, size, fade, status outlines and a legend.
-- [ ] M5-T3: Selection, neighbour lines, the evidence panel, audio playback from a quote, and the transcript link.
-- [ ] M5-T4: Filters.
-- [ ] M5-T5: A Playwright test that signs in, uploads fixture text, waits for `ready`, opens the map, selects a landmark and reads a quote.
+- [ ] M6-T1: Deployment, if the owner wants V1 hosted: container images, managed Postgres, a storage bucket, HTTPS and secrets. Needs the owner's decision on hosting.
+- [ ] M6-T2: Backups: a scheduled database dump and versioning on the bucket.
+- [ ] M6-T3: The owner uploads one real therapy session. Claude Code does not handle real data.
+- [ ] M6-T4: The owner checks 30 random statements and 30 random concepts against the transcript, and records findings in `docs/DECISIONS.md` in general terms.
+- [ ] M6-T5: Tune prompts and thresholds against the synthetic fixtures to address the findings.
 
-Done when the Playwright test passes and every hypothesis shows its label in the panel.
+Done when the owner can open any item on the map and read the quotes behind it. That is the V1 exit.
 
 ## Milestone reports
 ### M0 Foundations (2026-11-25)
@@ -56,18 +56,27 @@ Done when the Playwright test passes and every hypothesis shows its label in the
 - Also checked: placement is deterministic, reprocessing puts concepts back where they were, unsorted and retracted concepts are off the map, every hypothesis in the API carries its label.
 - `make verify`: 161 backend tests and 2 web tests passed.
 
+### M5 Web map (2026-11-25)
+- "The Playwright test passes": `make e2e` passed, 3 tests. `e2e/map.spec.ts` signs in, pastes the journal fixture, waits for Ready, opens the map, selects a landmark, reads its quote in the evidence panel and follows the link back to the transcript. Extraction in that test is the keyword fake, not a model.
+- "Every hypothesis shows its label in the panel": component tests in `web/src/map/map.test.tsx` check the label for a hypothesis concept, a hypothesis relationship in the related list, and a relationship shown on its own; the API test checks every hypothesis landmark carries the label.
+- Looked at by eye: screenshots of the map with the three fixtures loaded (31 concepts). Regions, landmarks, status outlines, relationship lines and the panel render as intended. Not looked at: audio playback from a quote in a real browser (the test source is text), behaviour with hundreds of landmarks, small screens.
+- `make verify`: 161 backend tests and 13 web tests passed.
+
 ## Session log (newest first, keep the last 10)
 ### 2026-11-25
-- Done: M4-T1 to M4-T5. Geometry, placement, layout stage, GraphStore, map and evidence endpoints.
+- Done: M5-T1 to M5-T5. MapRenderer (SVG, d3 zoom), icons, size, fade, outlines, legend, selection, neighbour lines, evidence panel, filters, Playwright test.
+- Done earlier the same day: M4-T1 to M4-T5. Geometry, placement, layout stage, GraphStore, map and evidence endpoints.
 - Done earlier the same day: M3-T1 to M3-T8 (see the M3 report for what is unverified). Decisions D-011 to D-015.
 - Done earlier the same day: M2-T1 to M2-T8. Providers and fakes, job queue and worker, source API, media, ElevenLabs adapter, text path, speaker roles, web pages, Playwright. Decision D-010.
 - Done earlier the same day: M1-T1 to M1-T7. Vocabulary v1, generator, initial migration with row-level security, session helper, rules module, retraction, sign-in. Decisions D-006 to D-009.
 - Done earlier the same day: M0-T1 to M0-T5. Memory setup, repository skeleton, Compose with Postgres plus pgvector and MinIO, typed settings, content-safe logging, CI workflow. Decisions D-001 to D-005.
 - Verified by: `make verify` (all passed) and a `make dev` smoke check with curl.
 - Unfinished: nothing in M0.
-- Next: M5-T1.
+- Next: M6-T2, then the owner's tasks.
 
 ## Known issues
+- `test_a_failed_stage_is_recorded_and_can_be_retried_alone` failed once in about fifteen runs and passed on every rerun. Cause unknown; the assertion now reports what each stage did.
+- Audio playback from a quote has only been exercised through component tests, not with a real recording in a browser.
 - M3's live scorecard has not been run (D-015). No prompt has been run against a live model.
 - No embedding provider is configured (D-014); similarity matching uses a local word-hash embedder.
 - The ElevenLabs adapter is untested against the live API (D-010).
