@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider, useAuth } from './auth'
 import MapPage from './map/MapPage'
@@ -13,14 +13,40 @@ function Shell() {
   return (
     <>
       <header className="topbar">
-        <strong>Mental Atlas</strong>
-        <nav>
-          <Link to="/">Map</Link>
-          <Link to="/sources">Sources</Link>
+        <Link to="/" className="brand">
+          <svg viewBox="0 0 28 28" aria-hidden="true">
+            <circle cx="14" cy="14" r="12" fill="none" stroke="var(--accent)" strokeWidth="1" strokeDasharray="2 4" />
+            <circle cx="14" cy="14" r="7" fill="none" stroke="var(--accent)" strokeWidth="1.2" />
+            <circle cx="14" cy="14" r="2.6" fill="var(--accent)" />
+          </svg>
+          Mental Atlas
+        </Link>
+        <nav aria-label="Main">
+          <NavLink to="/" end>
+            Atlas
+          </NavLink>
+          <NavLink to="/sources">Sources</NavLink>
         </nav>
-        <button type="button" className="quiet" onClick={signOut}>
-          Sign out
-        </button>
+        <div className="topbar-end">
+          <span className="private">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Private to you
+          </span>
+          <button type="button" className="quiet small" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
       </header>
       <Outlet />
     </>

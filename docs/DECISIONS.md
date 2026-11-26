@@ -199,3 +199,15 @@ Entry format:
 - Reason: Owner's instruction. A ribbon in the graph's plane is used instead of a GL line because GL lines are one pixel wide.
 - Alternatives considered: three.js fat lines (`Line2`).
 - Approved by owner: yes (requested)
+
+## D-023 (2026-11-26) The web app takes the "living tissue" design
+- Context: A design session produced `docs/design/DESIGN_BRIEF.md` with two static mockups (`atlas.html`, `source.html`): a dark teal ground, spore-green accent, Newsreader and Figtree, glass bars, and a map drawn as six bordered regions with icon orbs. The map half of it reverses D-018, D-019, D-021 and D-022.
+- Decision: The web app is restyled to the brief, in the brief's order, one commit per step: tokens, fonts and top bar; evidence panel; sources pages; a new SVG map renderer behind `MapRenderer`.
+  - The owner approved superseding D-018, D-019, D-021 and D-022 with the new SVG renderer. Those entries stand until the renderer step lands; its details are logged as their own decision then.
+  - Fonts are self-hosted with `@fontsource-variable/figtree` 5.3.0 and `@fontsource-variable/newsreader` 5.3.0 (both published 2026-07-19), so no page load makes a request to Google.
+  - The top bar shows Atlas and Sources only. The mockup's inert "soon" labels for Patterns, Timeline and "Ask the atlas" are left out, because those are later phases.
+  - The nav item "Map" is renamed "Atlas", as in the mockup. Sign out stays in the top bar next to "Private to you", which the mockup does not show.
+  - Colours, type and spacing are CSS custom properties on `:root` in `web/src/index.css`.
+- Reason: Owner's instruction. Fonts and the "soon" labels were the owner's choice when asked.
+- Alternatives considered: Loading fonts from Google Fonts as the mockup does; system fonts only; showing the "soon" labels.
+- Approved by owner: yes (requested)
