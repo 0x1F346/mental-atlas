@@ -51,7 +51,7 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   await page.screenshot({ path: testInfo.outputPath('map.png') })
 
   // The quote links back to its place in the transcript.
-  await quote.getByRole('link', { name: 'In the transcript' }).click()
+  await quote.getByRole('link', { name: 'Open in transcript' }).click()
   await expect(page.locator('.segment.target')).toContainText('my stomach has been in knots')
 })
 

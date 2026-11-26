@@ -316,7 +316,7 @@ test('every quote shows who said it, when, where, its stance and its basis', () 
   expect(first).toHaveTextContent('Supports')
   expect(first).toHaveTextContent('Said directly')
   expect(within(first).getByRole('button', { name: 'Play from 1:35' })).toBeInTheDocument()
-  expect(within(first).getByRole('link', { name: 'In the transcript' })).toHaveAttribute(
+  expect(within(first).getByRole('link', { name: 'Open in transcript' })).toHaveAttribute(
     'href',
     '/sources/src1#segment-seg1',
   )
@@ -340,4 +340,28 @@ test('a relationship can be shown on its own', () => {
   expect(screen.getByRole('heading', { name: 'dread led to going quiet' })).toBeInTheDocument()
   expect(screen.getByText('Relationship')).toBeInTheDocument()
   expect(screen.getByTestId('status-line')).toHaveClass('hypothesis')
+})
+
+test('quotes are listed newest first, with the type and life area above the name', () => {
+  renderPanel(
+    {
+      target_kind: 'node',
+      target_id: 'shame',
+      title: 'shame',
+      ...HYPOTHESIS,
+      items: [
+        quote('old', { quote: 'the first time', said_at: '2026-01-12T10:00:30Z', source_title: 'Session one' }),
+        quote('new', { quote: 'the latest time', said_at: '2026-01-19T10:05:00Z', source_title: 'Session two', source_id: 'src2' }),
+      ],
+    },
+    NODE,
+  )
+  const items = within(screen.getByRole('region', { name: 'Quotes' })).getAllByRole('listitem')
+  expect(items.map((item) => item.querySelector('blockquote')?.textContent)).toEqual([
+    '“the latest time”',
+    '“the first time”',
+  ])
+  expect(screen.getByText(/Feeling · Family/)).toBeInTheDocument()
+  expect(screen.getByText('2 support · 0 contradict · newest first')).toBeInTheDocument()
+  expect(screen.getByText('across 2 sources')).toBeInTheDocument()
 })

@@ -28,7 +28,22 @@ export const STATUS_LABELS: Record<Status, string> = {
   hypothesis: 'Hypothesis',
 }
 
-export const NOTICED_LABELS = { self: 'Me', therapist: 'My therapist', ai: 'Inferred' } as const
+/** Colours for concept types (docs/design/DESIGN_BRIEF.md). Other types share a neutral one. */
+const TYPE_COLOURS: Partial<Record<NodeType, string>> = {
+  person: '#FF9B85',
+  situation: '#F2C36B',
+  event: '#6FD6E8',
+  feeling: '#B9A2FF',
+  belief: '#8CEBB0',
+  behaviour: '#F08FC0',
+}
+const OTHER_TYPE_COLOUR = '#A9C2BE'
+
+export function typeColour(type: NodeType): string {
+  return TYPE_COLOURS[type] ?? OTHER_TYPE_COLOUR
+}
+
+export const NOTICED_LABELS ={ self: 'Me', therapist: 'My therapist', ai: 'Inferred' } as const
 
 /** Only the largest landmarks carry a label until one is selected. */
 export function prominentIds(landmarks: Landmark[], limit = 12): Set<string> {
