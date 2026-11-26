@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d'
-import { MOUSE } from 'three'
+import { MOUSE, type Mesh } from 'three'
 
 import { landmarkLabel, prominentIds } from './appearance'
 import {
   animateStar,
   AREA_COLOURS,
+  makeLink,
   makeStar,
   makeStarfield,
+  placeLink,
   recentIds,
   SPACE_BACKGROUND,
   textSprite,
@@ -250,6 +252,17 @@ export default function ForceGraphRenderer({
     [recent, stars],
   )
 
+  // A line per relationship, graded from the origin's colour to the connecting point's.
+  const linkObject = useCallback(
+    (link: GraphLink) =>
+      makeLink(
+        byId.get(endId(link.source))?.life_area ?? 'self',
+        byId.get(endId(link.target))?.life_area ?? 'self',
+        link.isHypothesis,
+      ),
+    [byId],
+  )
+
   const selected = selectedNodeId ? byId.get(selectedNodeId) : undefined
   return (
     <div className="map-frame space" ref={frame}>
@@ -270,13 +283,11 @@ export default function ForceGraphRenderer({
           cooldownTime={still ? 0 : 6000}
           d3AlphaDecay={0.03}
           d3VelocityDecay={0.5}
-          linkColor={(link) => (link.isHypothesis ? 'rgba(232,236,245,0.35)' : 'rgba(232,236,245,0.8)')}
-          linkWidth={(link) => (link.edgeId === selectedEdgeId ? 1.6 : 0.6)}
-          linkOpacity={0.55}
-          linkDirectionalParticles={(link) => (still ? 0 : link.isHypothesis ? 1 : 3)}
-          linkDirectionalParticleWidth={2.2}
-          linkDirectionalParticleSpeed={0.007}
-          linkDirectionalParticleColor={(link) => AREA_COLOURS[byId.get(endId(link.target))?.life_area ?? 'self']}
+          linkThreeObject={linkObject}
+          linkPositionUpdate={(object, { start, end }, link) => {
+            placeLink(object as Mesh, start, end, link.edgeId === selectedEdgeId)
+            return true
+          }}
           onNodeClick={(node) => onSelectNode(node.id)}
           onLinkClick={(link) => onSelectEdge(link.edgeId)}
           onBackgroundClick={() => onSelectNode(null)}

@@ -192,3 +192,10 @@ Entry format:
 - Reason: Owner's instruction.
 - Alternatives considered: None.
 - Approved by owner: yes (requested)
+
+## D-022 (2026-11-26) Relationship lines are colour gradients, with no particles
+- Context: D-018 drew relationships as thin lines with particles travelling along them. The owner asked to remove the moving particles and draw lines whose colour grades from the origin point to the connecting point.
+- Decision: Each relationship of the selected landmark is a flat ribbon whose colour runs from the origin's life-area colour to the connecting point's. A hypothesis is drawn fainter; the selected relationship is drawn wider. No particles. The pulse on recently seen landmarks and the flicker on hypotheses are unchanged.
+- Reason: Owner's instruction. A ribbon in the graph's plane is used instead of a GL line because GL lines are one pixel wide.
+- Alternatives considered: three.js fat lines (`Line2`).
+- Approved by owner: yes (requested)
