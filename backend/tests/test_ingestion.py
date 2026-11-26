@@ -78,6 +78,23 @@ def status_of(session: Session, source_id: uuid.UUID) -> str:
     return source.status
 
 
+def test_a_new_job_can_be_claimed_when_this_host_clock_runs_ahead(
+    user_id: uuid.UUID, providers: Providers, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A Docker VM clock a few milliseconds behind the host once hid new jobs from drain().
+    class AheadClock(datetime.datetime):
+        @classmethod
+        def now(cls, tz: datetime.tzinfo | None = None) -> "AheadClock":
+            return super().now(tz) + datetime.timedelta(hours=1)
+
+    shim = type(
+        "Clock", (), {"datetime": AheadClock, "timedelta": datetime.timedelta, "UTC": datetime.UTC}
+    )
+    monkeypatch.setattr(queue, "datetime", shim)
+    add_journal(user_id, providers)
+    assert queue.claim("test-worker", lease_seconds=60) is not None
+
+
 def test_pasted_text_reaches_segments(
     db: Session, user_id: uuid.UUID, providers: Providers
 ) -> None:

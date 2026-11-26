@@ -123,7 +123,7 @@ def _finish(ctx: StageContext, stage: Stage, outcome: Outcome) -> None:
     if isinstance(outcome, Defer):
         ctx.job.status = "queued"
         ctx.job.attempts = max(ctx.job.attempts - 1, 0)  # Waiting on a provider is not a failure.
-        ctx.job.run_after = _now() + datetime.timedelta(seconds=outcome.seconds)
+        ctx.job.run_after = func.now() + datetime.timedelta(seconds=outcome.seconds)
         ctx.job.locked_at = ctx.job.locked_by = None
         return
     ctx.run.status = "succeeded"
@@ -156,7 +156,7 @@ def _fail(
         job.error = code
         if retryable and job.attempts < max_attempts:
             job.status = "queued"
-            job.run_after = _now() + datetime.timedelta(
+            job.run_after = func.now() + datetime.timedelta(
                 seconds=RETRY_BASE_SECONDS * 2 ** (job.attempts - 1)
             )
             return True
