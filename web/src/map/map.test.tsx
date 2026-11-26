@@ -1,28 +1,23 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import { prominentIds } from './appearance'
+import { NODE_TYPES } from '../api/generated/vocabulary'
+import { typeIcon } from '../icons'
+import {
+  AREA_COLOURS,
+  fadeOf,
+  labelColour,
+  landmarkDiameter,
+  orbOpacity,
+  prominentIds,
+  typeColour,
+} from './appearance'
 import EvidencePanel from './EvidencePanel'
-import ForceGraphRenderer from './ForceGraphRenderer'
-import { hiddenLandmarks } from './MapPage'
-import { AREA_COLOURS, glowSize, recentIds, seeded, shapeOf, toSpace } from './space'
+import MapPage, { hiddenLandmarks } from './MapPage'
+import SvgMapRenderer, { labelLimit } from './SvgMapRenderer'
+import { insetPolygon, strand } from './tissue'
 import type { Evidence, EvidenceItem, Landmark, MapDocument, NodeDetail } from './types'
-
-// jsdom has no WebGL: the graph library is replaced by a stub that records its props.
-const graphProps = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }))
-vi.mock('react-force-graph-3d', () => ({
-  default: (props: Record<string, unknown>) => {
-    graphProps.current = props
-    return <div data-testid="force-graph" />
-  },
-}))
-
-beforeEach(() => {
-  graphProps.current = null
-  // Pretend the browser can create a WebGL context.
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
-})
 
 function landmark(id: string, more: Partial<Landmark> = {}): Landmark {
   return {
@@ -67,11 +62,11 @@ const MAP: MapDocument = {
   ],
 }
 
-function renderMap(props: Partial<Parameters<typeof ForceGraphRenderer>[0]> = {}) {
+function renderMap(props: Partial<Parameters<typeof SvgMapRenderer>[0]> = {}) {
   const onSelectNode = vi.fn()
   const onSelectEdge = vi.fn()
   render(
-    <ForceGraphRenderer
+    <SvgMapRenderer
       document={MAP}
       hiddenIds={new Set()}
       selectedNodeId={null}
@@ -85,98 +80,119 @@ function renderMap(props: Partial<Parameters<typeof ForceGraphRenderer>[0]> = {}
   return { onSelectNode, onSelectEdge }
 }
 
-interface StubNode {
-  id: string
-  x: number
-  y: number
-  z: number
-  fx?: number
-  home: { x: number; y: number; z: number }
-  well: { x: number; y: number }
+function mapGroup() {
+  return screen.getByRole('group', { name: 'Map of your atlas' })
 }
 
-function nodesAreFlat() {
-  return graphData().nodes.every((node) => node.z === 0 && node.home.z === 0)
-}
-
-function graphData() {
-  return graphProps.current?.graphData as {
-    nodes: StubNode[]
-    links: { source: string; target: string; edgeId: string; isHypothesis: boolean }[]
-  }
-}
-
-test('every landmark is a node seeded from its map position, in a dark space', () => {
+test('every landmark is a button at its saved position, outlined by its status', () => {
   renderMap()
-  expect(screen.getByTestId('force-graph')).toBeInTheDocument()
-  expect(graphProps.current?.backgroundColor).toBe('#04050c')
-  expect(graphProps.current?.numDimensions).toBe(2)
-  expect(nodesAreFlat()).toBe(true)
-  const { nodes, links } = graphData()
-  expect(nodes.map((node) => node.id)).toEqual(['dread', 'shame', 'found out'])
-  const dread = nodes[0]
-  // Map position (300, 300) becomes (-200, 200): centred, with y pointing up.
-  expect([dread?.x, dread?.y]).toEqual([-200, 200])
-  expect(dread?.home.x).toBe(-200)
-  // Its gravity well is the anchor of its life area, Work at (300, 700).
-  expect(dread?.well).toEqual({ x: -200, y: -200 })
-  expect(links).toEqual([])
+  const map = mapGroup()
+  const dread = within(map).getByRole('button', { name: 'Feeling: dread (stated)' })
+  const shame = within(map).getByRole('button', { name: 'Feeling: shame (hypothesis)' })
+  const belief = within(map).getByRole('button', { name: 'Belief: found out (observed)' })
+  expect([dread.dataset.x, dread.dataset.y]).toEqual(['300', '300'])
+  expect([shame.dataset.x, shame.dataset.y]).toEqual(['340', '380'])
+  expect(dread).toHaveClass('status-stated')
+  expect(shame).toHaveClass('status-hypothesis')
+  expect(belief).toHaveClass('status-observed')
+  // The hypothesis label is on the landmark itself, not only in the panel.
+  expect(shame).toHaveAttribute('title', 'Feeling: shame (hypothesis)')
 })
 
-test('landmarks can be selected from the keyboard-accessible list and from the graph', () => {
-  const { onSelectNode } = renderMap()
-  const list = screen.getByRole('group', { name: 'Map of your atlas' })
-  expect(within(list).getByRole('button', { name: 'Feeling: shame (hypothesis)' })).toBeInTheDocument()
-  expect(within(list).getByRole('button', { name: 'Belief: found out (observed)' })).toBeInTheDocument()
-  fireEvent.click(within(list).getByRole('button', { name: 'Feeling: dread (stated)' }))
-  const click = graphProps.current?.onNodeClick as (node: { id: string }) => void
-  click({ id: 'shame' })
-  const background = graphProps.current?.onBackgroundClick as () => void
-  background()
-  expect(onSelectNode.mock.calls).toEqual([['dread'], ['shame'], [null]])
+test('regions are drawn from the stored polygons, with their names', () => {
+  renderMap()
+  const map = mapGroup()
+  expect(within(map).getByText('Work')).toBeInTheDocument()
+  expect(within(map).getByText('Self')).toBeInTheDocument()
+  const work = map.querySelector('.region[data-area="work"]')
+  expect(work?.querySelector('.memb')?.getAttribute('d')).toMatch(/^M/)
+  expect(work?.querySelector('.memb2')?.getAttribute('d')).toMatch(/^M/)
+})
+
+test('landmarks are selected by click, and a click on the background clears the selection', () => {
+  const { onSelectNode } = renderMap({ selectedNodeId: 'dread' })
+  fireEvent.click(screen.getByRole('button', { name: /shame/ }))
+  fireEvent.click(mapGroup())
+  fireEvent.keyDown(mapGroup(), { key: 'Escape' })
+  expect(onSelectNode.mock.calls).toEqual([['shame'], [null], [null]])
+  expect(screen.getByRole('button', { name: /dread/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('relationships are hidden until a landmark is selected', () => {
   const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true }]
   renderMap({ lines })
-  expect(graphData().links).toEqual([])
   expect(screen.queryByRole('button', { name: /Relationship/ })).toBeNull()
 })
 
-test('a selected landmark reveals links to its neighbours, and they can be picked', () => {
-  const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true }]
+test('a selected landmark shows its relationships, labelled, and they can be picked', () => {
+  const lines = [
+    { edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true },
+    { edgeId: 'e2', type: 'CONFLICTS_WITH', otherId: 'found out', isHypothesis: false },
+  ]
   const { onSelectEdge } = renderMap({ lines, selectedNodeId: 'dread' })
-  expect(graphData().links).toEqual([{ source: 'dread', target: 'shame', edgeId: 'e1', isHypothesis: true }])
-  // Links are plain graded lines: no particles travel along them.
-  expect(graphProps.current?.linkDirectionalParticles).toBeUndefined()
-  expect(typeof graphProps.current?.linkThreeObject).toBe('function')
-  fireEvent.click(screen.getByRole('button', { name: 'Relationship: dread led to shame' }))
-  const pick = graphProps.current?.onLinkClick as (link: { edgeId: string }) => void
-  pick({ edgeId: 'e1' })
-  expect(onSelectEdge.mock.calls).toEqual([['e1'], ['e1']])
-  expect(screen.getByRole('button', { name: 'Feeling: dread (stated)' })).toHaveAttribute('aria-pressed', 'true')
+  const hypothesis = screen.getByRole('button', { name: 'Relationship: dread led to shame (hypothesis)' })
+  const tension = screen.getByRole('button', { name: 'Relationship: dread conflicts with found out' })
+  expect(hypothesis.closest('.strand')).toHaveClass('hypothesis')
+  expect(tension.closest('.strand')).toHaveClass('tension')
+  // A hypothesis strand carries a visible label on the map.
+  expect(within(mapGroup()).getByText('Hypothesis')).toHaveClass('strand-tag')
+  fireEvent.click(hypothesis)
+  fireEvent.keyDown(tension, { key: 'Enter' })
+  expect(onSelectEdge.mock.calls).toEqual([['e1'], ['e2']])
 })
 
-test('hidden landmarks are not drawn', () => {
-  renderMap({ hiddenIds: new Set(['shame']) })
-  expect(graphData().nodes.map((node) => node.id)).toEqual(['dread', 'found out'])
+test('hidden landmarks are not drawn, and neither are relationships to them', () => {
+  const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: false }]
+  renderMap({ hiddenIds: new Set(['shame']), lines, selectedNodeId: 'dread' })
   expect(screen.queryByRole('button', { name: /shame/ })).toBeNull()
+  expect(screen.getAllByRole('button', { name: /^(Feeling|Belief):/ })).toHaveLength(2)
 })
 
-test('the owner is fixed at the centre', () => {
-  const me = landmark('me', { type: 'person', is_self: true, life_area: 'self', x: 500, y: 500 })
-  renderMap({ document: { ...MAP, landmarks: [me, ...MAP.landmarks] } })
-  const node = graphData().nodes.find((item) => item.id === 'me')
-  expect([node?.fx, node?.x, node?.y, node?.z]).toEqual([0, 0, 0, 0])
+test('only prominent landmarks carry a label until one is selected or the map is zoomed in', () => {
+  const many = Array.from({ length: 15 }, (_, index) =>
+    landmark(`m${index}`, { evidence_count: 20 - index, x: 100 + index * 50 }),
+  )
+  renderMap({ document: { ...MAP, landmarks: many }, selectedNodeId: 'm14' })
+  const labelled = mapGroup().querySelectorAll('.lm-label')
+  // Twelve prominent landmarks, plus the selected one.
+  expect(labelled).toHaveLength(13)
+  expect(screen.getByRole('button', { name: /m14/ }).querySelector('.lm-label')).not.toBeNull()
+  expect(screen.getByRole('button', { name: /m13/ }).querySelector('.lm-label')).toBeNull()
 })
 
-test('without WebGL the landmarks are still listed and selectable', () => {
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
-  const { onSelectNode } = renderMap()
-  expect(screen.queryByTestId('force-graph')).toBeNull()
-  expect(screen.getByText(/WebGL is unavailable/)).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Feeling: dread (stated)' }))
-  expect(onSelectNode).toHaveBeenCalledWith('dread')
+test('the map page lists filters, with the rarer types under More', async () => {
+  const marks = [
+    landmark('a'),
+    landmark('b', { type: 'person' }),
+    landmark('c', { type: 'need' }),
+    landmark('d', { type: 'blind_spot' }),
+  ]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (request: Request) => {
+      const body = request.url.endsWith('/map') ? { ...MAP, landmarks: marks } : []
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    }),
+  )
+  render(
+    <MemoryRouter>
+      <MapPage />
+    </MemoryRouter>,
+  )
+  const types = await screen.findByRole('group', { name: 'Filter by type' })
+  expect(within(types).getAllByRole('button').map((button) => button.textContent)).toEqual([
+    'Person',
+    'Feeling',
+    'More types',
+  ])
+  fireEvent.click(within(types).getByRole('button', { name: 'More types' }))
+  const more = screen.getByRole('group', { name: 'More types' })
+  fireEvent.click(within(more).getByRole('button', { name: 'Need' }))
+  expect(within(types).getByRole('button', { name: 'More types · 1' })).toBeInTheDocument()
+  expect(screen.getByTestId('map-count')).toHaveTextContent('1 of 4 concepts')
+  const noticed = screen.getByRole('group', { name: 'Filter by who noticed it' })
+  expect(within(noticed).getByRole('button', { name: 'Anyone' })).toHaveAttribute('aria-pressed', 'true')
+  vi.unstubAllGlobals()
 })
 
 test('filters by type, by who noticed it and by source', () => {
@@ -193,25 +209,43 @@ test('filters by type, by who noticed it and by source', () => {
   expect(hiddenLandmarks(marks, { ...none, sourceId: 's2' })).toEqual(new Set(['a']))
 })
 
-test('size grows with evidence, colour follows life area, and recent landmarks are found', () => {
-  expect(glowSize(9)).toBeGreaterThan(glowSize(1))
-  expect(glowSize(10_000)).toBeLessThanOrEqual(90)
+test('size grows with evidence, opacity fades with age, and every type has its own icon', () => {
+  expect(landmarkDiameter(1)).toBe(28)
+  expect(landmarkDiameter(4)).toBeGreaterThan(landmarkDiameter(2))
+  expect(landmarkDiameter(10_000)).toBe(66)
+  const newest = Date.parse('2026-03-01T00:00:00Z')
+  expect(fadeOf('2026-03-01T00:00:00Z', newest)).toBe(0)
+  expect(fadeOf('2026-01-30T00:00:00Z', newest)).toBeCloseTo(0.25)
+  expect(fadeOf('2025-01-01T00:00:00Z', newest)).toBe(1)
+  expect(fadeOf(null, newest)).toBe(1)
+  expect([orbOpacity(0), orbOpacity(1)]).toEqual([1, 0.4])
+  // The label fades no further than #93AEAB, so it stays readable.
+  expect([labelColour(0), labelColour(1)]).toEqual(['#f2f7f3', '#93aeab'])
+  expect(new Set(NODE_TYPES.map(typeIcon)).size).toBe(NODE_TYPES.length)
+  expect(typeColour('person')).toBe('#FF9B85')
+  expect(typeColour('need')).toBe(typeColour('blind_spot'))
   expect(new Set(Object.values(AREA_COLOURS)).size).toBe(6)
-  // People are stars; every other type is a round point.
-  expect(shapeOf('person')).toBe('star')
-  expect(shapeOf('feeling')).toBe('point')
-  expect(shapeOf('group')).toBe('point')
-  expect(toSpace(500, 500)).toEqual({ x: 0, y: 0 })
-  expect(seeded('abc')).toBe(seeded('abc'))
-  expect(seeded('abc')).not.toBe(seeded('abd'))
-  const marks = [
-    landmark('new', { last_seen_at: '2026-03-01T00:00:00Z' }),
-    landmark('near', { last_seen_at: '2026-02-10T00:00:00Z' }),
-    landmark('old', { last_seen_at: '2025-06-01T00:00:00Z' }),
-    landmark('never', { last_seen_at: null }),
-  ]
-  expect(recentIds(marks)).toEqual(new Set(['new', 'near']))
   expect(prominentIds(MAP.landmarks, 1)).toEqual(new Set(['dread']))
+})
+
+test('membranes are drawn inside the stored outline, and strands are seeded by edge', () => {
+  const square: [number, number][] = [
+    [0, 0],
+    [10, 0],
+    [10, 10],
+    [0, 10],
+  ]
+  const inset = insetPolygon(square, 1)
+  for (const [x, y] of inset) {
+    expect(x).toBeGreaterThan(0)
+    expect(x).toBeLessThan(10)
+    expect(y).toBeGreaterThan(0)
+    expect(y).toBeLessThan(10)
+  }
+  // The same in the other winding.
+  for (const [x] of insetPolygon([...square].reverse(), 1)) expect(x).toBeGreaterThan(0)
+  expect(strand([0, 0], [100, 0], 'e1')).toEqual(strand([0, 0], [100, 0], 'e1'))
+  expect(strand([0, 0], [100, 0], 'e1').path).not.toEqual(strand([0, 0], [100, 0], 'e2').path)
 })
 
 function quote(id: string, more: Partial<EvidenceItem> = {}): EvidenceItem {
@@ -316,7 +350,7 @@ test('every quote shows who said it, when, where, its stance and its basis', () 
   expect(first).toHaveTextContent('Supports')
   expect(first).toHaveTextContent('Said directly')
   expect(within(first).getByRole('button', { name: 'Play from 1:35' })).toBeInTheDocument()
-  expect(within(first).getByRole('link', { name: 'In the transcript' })).toHaveAttribute(
+  expect(within(first).getByRole('link', { name: 'Open in transcript' })).toHaveAttribute(
     'href',
     '/sources/src1#segment-seg1',
   )
@@ -340,4 +374,34 @@ test('a relationship can be shown on its own', () => {
   expect(screen.getByRole('heading', { name: 'dread led to going quiet' })).toBeInTheDocument()
   expect(screen.getByText('Relationship')).toBeInTheDocument()
   expect(screen.getByTestId('status-line')).toHaveClass('hypothesis')
+})
+
+test('quotes are listed newest first, with the type and life area above the name', () => {
+  renderPanel(
+    {
+      target_kind: 'node',
+      target_id: 'shame',
+      title: 'shame',
+      ...HYPOTHESIS,
+      items: [
+        quote('old', { quote: 'the first time', said_at: '2026-01-12T10:00:30Z', source_title: 'Session one' }),
+        quote('new', { quote: 'the latest time', said_at: '2026-01-19T10:05:00Z', source_title: 'Session two', source_id: 'src2' }),
+      ],
+    },
+    NODE,
+  )
+  const items = within(screen.getByRole('region', { name: 'Quotes' })).getAllByRole('listitem')
+  expect(items.map((item) => item.querySelector('blockquote')?.textContent)).toEqual([
+    '“the latest time”',
+    '“the first time”',
+  ])
+  expect(screen.getByText(/Feeling · Family/)).toBeInTheDocument()
+  expect(screen.getByText('2 support · 0 contradict · newest first')).toBeInTheDocument()
+  expect(screen.getByText('across 2 sources')).toBeInTheDocument()
+})
+
+test('more labels appear as the map is zoomed in', () => {
+  expect([labelLimit(0.6), labelLimit(1), labelLimit(1.4), labelLimit(1.42), labelLimit(2), labelLimit(4)]).toEqual([
+    12, 12, 12, 24, 48, 192,
+  ])
 })

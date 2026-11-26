@@ -1,15 +1,17 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { api, unwrap, type Source } from '../api/client'
 import { NODE_TYPES, type NodeType } from '../api/generated/vocabulary'
-import { NOTICED_LABELS, TYPE_LABELS } from './appearance'
+import { Icon, typeIcon } from '../icons'
+import { MAIN_TYPES, NOTICED_LABELS, TYPE_LABELS, typeColour } from './appearance'
 import EvidencePanel from './EvidencePanel'
 import Legend from './Legend'
+import SvgMapRenderer from './SvgMapRenderer'
 import type { Evidence, Landmark, MapDocument, MapRenderer, NodeDetail, RelationshipLine } from './types'
 
-// The one place the renderer is chosen. It is loaded on demand: the WebGL library is large.
-const Renderer: MapRenderer = lazy(() => import('./ForceGraphRenderer'))
+// The one place the renderer is chosen.
+const Renderer: MapRenderer = SvgMapRenderer
 
 type Noticed = keyof typeof NOTICED_LABELS
 const NOTICED: Noticed[] = ['self', 'therapist', 'ai']
@@ -49,6 +51,9 @@ export default function MapPage() {
   const [edgeId, setEdgeId] = useState<string | null>(null)
   const [node, setNode] = useState<NodeDetail | null>(null)
   const [evidence, setEvidence] = useState<Evidence | null>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
+  // On phones the filters start folded away so the map can be seen; elsewhere they always show.
+  const [filtersFolded, setFiltersFolded] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -123,69 +128,112 @@ export default function MapPage() {
   if (!map) return <main className="page" aria-busy="true" />
 
   const concepts = map.landmarks.filter((mark) => !mark.is_self).length
+  const mainTypes = typesPresent.filter((type) => MAIN_TYPES.includes(type))
+  const otherTypes = typesPresent.filter((type) => !MAIN_TYPES.includes(type))
+  const otherChosen = otherTypes.filter((type) => filters.types.has(type)).length
+  const typeChip = (type: NodeType) => (
+    <button
+      key={type}
+      type="button"
+      className="chip"
+      aria-pressed={filters.types.has(type)}
+      onClick={() => setFilters({ ...filters, types: toggle(filters.types, type) })}
+    >
+      <span style={{ color: typeColour(type) }}>
+        <Icon name={typeIcon(type)} size={15} />
+      </span>
+      {TYPE_LABELS[type]}
+    </button>
+  )
+
   return (
     <main className="map-page">
-      <section className="map-toolbar" aria-label="Filters">
-        <fieldset>
-          <legend>Type</legend>
-          {typesPresent.map((type) => (
-            <label key={type} className="inline chip">
-              <input
-                type="checkbox"
-                checked={filters.types.has(type)}
-                onChange={() => setFilters({ ...filters, types: toggle(filters.types, type) })}
-              />
-              {TYPE_LABELS[type]}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset>
-          <legend>Noticed by</legend>
-          {NOTICED.map((who) => (
-            <label key={who} className="inline chip">
-              <input
-                type="checkbox"
-                checked={filters.noticed.has(who)}
-                onChange={() => setFilters({ ...filters, noticed: toggle(filters.noticed, who) })}
-              />
-              {NOTICED_LABELS[who]}
-            </label>
-          ))}
-        </fieldset>
-        <label className="inline">
-          Source
-          <select value={filters.sourceId} onChange={(e) => setFilters({ ...filters, sourceId: e.target.value })}>
-            <option value="">All sources</option>
-            {sources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="muted" data-testid="map-count">
-          {concepts - hidden.size} of {concepts} concepts
-        </span>
-      </section>
-
       <div className="map-body">
         <div className="map-area">
+          <Renderer
+            document={map}
+            hiddenIds={hidden}
+            selectedNodeId={nodeId}
+            selectedEdgeId={edgeId}
+            lines={lines}
+            onSelectNode={selectNode}
+            onSelectEdge={setEdgeId}
+          />
+
+          <section className={`map-toolbar glass${filtersFolded ? ' folded' : ''}`} aria-label="Filters">
+            <button
+              type="button"
+              className="chip filters-toggle"
+              aria-expanded={!filtersFolded}
+              onClick={() => setFiltersFolded(!filtersFolded)}
+            >
+              Filters · {concepts - hidden.size} of {concepts}
+            </button>
+            <div className="filter-row" role="group" aria-label="Filter by type">
+              <span className="filter-label">Type</span>
+              {mainTypes.map(typeChip)}
+              {otherTypes.length > 0 && (
+                <button
+                  type="button"
+                  className="chip"
+                  aria-expanded={moreOpen}
+                  aria-controls="more-types"
+                  onClick={() => setMoreOpen(!moreOpen)}
+                >
+                  More types{otherChosen > 0 ? ` · ${otherChosen}` : ''}
+                </button>
+              )}
+            </div>
+            {moreOpen && otherTypes.length > 0 && (
+              <div id="more-types" className="filter-row more-types" role="group" aria-label="More types">
+                {otherTypes.map(typeChip)}
+              </div>
+            )}
+            <div className="filter-row">
+              <div className="filter-row" role="group" aria-label="Filter by who noticed it">
+                <span className="filter-label">Noticed by</span>
+                <button
+                  type="button"
+                  className="chip"
+                  aria-pressed={filters.noticed.size === 0}
+                  onClick={() => setFilters({ ...filters, noticed: new Set() })}
+                >
+                  Anyone
+                </button>
+                {NOTICED.map((who) => (
+                  <button
+                    key={who}
+                    type="button"
+                    className="chip"
+                    aria-pressed={filters.noticed.has(who)}
+                    onClick={() => setFilters({ ...filters, noticed: toggle(filters.noticed, who) })}
+                  >
+                    {NOTICED_LABELS[who]}
+                  </button>
+                ))}
+              </div>
+              <label className="filter-row filter-source">
+                <span className="filter-label">Source</span>
+                <select value={filters.sourceId} onChange={(e) => setFilters({ ...filters, sourceId: e.target.value })}>
+                  <option value="">All sources</option>
+                  {sources.map((source) => (
+                    <option key={source.id} value={source.id}>
+                      {source.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="map-count" data-testid="map-count">
+                {concepts - hidden.size} of {concepts} concepts
+              </span>
+            </div>
+          </section>
+
           {concepts === 0 && (
-            <p className="map-empty">
+            <p className="map-empty glass">
               Nothing on the map yet. <Link to="/sources">Add a source</Link> to begin.
             </p>
           )}
-          <Suspense fallback={<div className="map-frame space" aria-busy="true" />}>
-            <Renderer
-              document={map}
-              hiddenIds={hidden}
-              selectedNodeId={nodeId}
-              selectedEdgeId={edgeId}
-              lines={lines}
-              onSelectNode={selectNode}
-              onSelectEdge={setEdgeId}
-            />
-          </Suspense>
           <Legend />
         </div>
         {evidence && nodeId && (

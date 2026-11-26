@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { api, unwrap } from '../api/client'
+import { LIFE_AREA_LABELS } from '../api/generated/vocabulary'
+import { Icon, typeIcon } from '../icons'
 import { formatDate, formatTime } from '../sources/labels'
-import { NOTICED_LABELS, TYPE_LABELS } from './appearance'
+import { NOTICED_LABELS, TYPE_LABELS, typeColour } from './appearance'
 import type { Evidence, EvidenceItem, NodeDetail, Relationship } from './types'
 
 const SPEAKERS = { self: 'Me', therapist: 'My therapist', other: 'Someone else' } as const
@@ -21,6 +23,11 @@ const RELATIONSHIP_PHRASES: Record<string, [string, string]> = {
   HELPS: ['Helps', 'Helped by'],
   BLOCKS: ['Blocks', 'Blocked by'],
   CONFLICTS_WITH: ['Conflicts with', 'Conflicts with'],
+}
+
+/** Newest first. Quotes said at the same moment keep the order the API gave them. */
+function newestFirst(items: EvidenceItem[]): EvidenceItem[] {
+  return [...items].sort((a, b) => Date.parse(b.said_at) - Date.parse(a.said_at))
 }
 
 function groupRelationships(relationships: Relationship[]): [string, Relationship[]][] {
@@ -80,43 +87,66 @@ export default function EvidencePanel({ node, evidence, onSelectNode, onSelectEd
     }
   }
 
+  const quotes = newestFirst(evidence.items)
+  const supports = quotes.filter((item) => item.stance === 'supports').length
+  const sourceCount = new Set(quotes.map((item) => item.source_id)).size
+  const oldest = quotes.at(-1)
+  const newest = quotes[0]
+
   return (
     <aside className="evidence-panel" aria-label="Evidence">
-      <button type="button" className="quiet close" onClick={onClose} aria-label="Close the panel">
-        ×
-      </button>
-      <p className="muted kind">
-        {node ? TYPE_LABELS[node.type] : 'Relationship'}
-        {node?.kind ? ` · ${node.kind.replace('_', ' ')}` : ''}
-      </p>
-      <h2>{evidence.title}</h2>
-      {node?.aliases && node.aliases.length > 0 && (
-        <p className="muted">Also called {node.aliases.join(', ')}</p>
-      )}
-      {node?.description && <p>{node.description}</p>}
-      <p className={`status-line${evidence.is_hypothesis ? ' hypothesis' : ''}`} data-testid="status-line">
-        {evidence.status_line}
-      </p>
+      <header className="panel-head">
+        <div className="panel-kicker">
+          <p className="kind">
+            {node && <Icon name={typeIcon(node.type)} size={15} />}
+            {node ? TYPE_LABELS[node.type] : 'Relationship'}
+            {node?.kind ? ` · ${node.kind.replace('_', ' ')}` : ''}
+            {node ? ` · ${LIFE_AREA_LABELS[node.life_area]}` : ''}
+          </p>
+          <button type="button" className="icon-button close" onClick={onClose} aria-label="Close the panel">
+            <Icon name="close" size={20} />
+          </button>
+        </div>
+        <h2>{evidence.title}</h2>
+        {node?.aliases && node.aliases.length > 0 && (
+          <p className="muted">Also called {node.aliases.join(', ')}</p>
+        )}
+        {node?.description && <p className="description">{node.description}</p>}
+        <StatusLine status={evidence.status} line={evidence.status_line} hypothesis={evidence.is_hypothesis} />
+      </header>
 
       {node && (
         <dl className="facts">
-          <dt>Noticed by</dt>
-          <dd>
-            {node.noticed_by.length > 0
-              ? node.noticed_by.map((who) => NOTICED_LABELS[who]).join(', ')
-              : 'Nobody yet'}
-          </dd>
-          <dt>First seen</dt>
-          <dd>{node.first_seen_at ? formatDate(node.first_seen_at) : 'Never'}</dd>
-          <dt>Last seen</dt>
-          <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : 'Never'}</dd>
-          <dt>Times</dt>
-          <dd>{node.evidence_count}</dd>
+          <div>
+            <dt>Noticed by</dt>
+            <dd>
+              {node.noticed_by.length > 0
+                ? node.noticed_by.map((who) => NOTICED_LABELS[who]).join(', ')
+                : 'Nobody yet'}
+            </dd>
+          </div>
+          <div>
+            <dt>Seen</dt>
+            <dd>{node.evidence_count === 1 ? 'Once' : `${node.evidence_count} times`}</dd>
+            {sourceCount > 0 && (
+              <dd className="sub">{sourceCount === 1 ? 'in 1 source' : `across ${sourceCount} sources`}</dd>
+            )}
+          </div>
+          <div>
+            <dt>First seen</dt>
+            <dd>{node.first_seen_at ? formatDate(node.first_seen_at) : 'Never'}</dd>
+            {oldest && <dd className="sub">{oldest.source_title}</dd>}
+          </div>
+          <div>
+            <dt>Last seen</dt>
+            <dd>{node.last_seen_at ? formatDate(node.last_seen_at) : 'Never'}</dd>
+            {newest && <dd className="sub">{newest.source_title}</dd>}
+          </div>
         </dl>
       )}
 
       {node && node.relationships.length > 0 && (
-        <section aria-label="Related">
+        <section aria-label="Related" className="panel-section">
           <h3>Related</h3>
           {groupRelationships(node.relationships).map(([heading, items]) => (
             <div key={heading} className="related-group">
@@ -124,7 +154,14 @@ export default function EvidencePanel({ node, evidence, onSelectNode, onSelectEd
               <ul>
                 {items.map((relationship) => (
                   <li key={relationship.edge_id}>
-                    <button type="button" className="linklike" onClick={() => onSelectNode(relationship.other.id)}>
+                    <button
+                      type="button"
+                      className={`chip${relationship.is_hypothesis ? ' hypothesis' : ''}`}
+                      onClick={() => onSelectNode(relationship.other.id)}
+                    >
+                      <span style={{ color: typeColour(relationship.other.type) }}>
+                        <Icon name={typeIcon(relationship.other.type)} size={14} />
+                      </span>
                       {relationship.other.name}
                     </button>
                     {relationship.is_hypothesis && <span className="tag hypothesis">Hypothesis</span>}
@@ -144,10 +181,15 @@ export default function EvidencePanel({ node, evidence, onSelectNode, onSelectEd
         </section>
       )}
 
-      <section aria-label="Quotes">
-        <h3>
-          Quotes <span className="muted">({evidence.items.length})</span>
-        </h3>
+      <section aria-label="Quotes" className="panel-section">
+        <div className="section-head">
+          <h3>Quotes</h3>
+          {quotes.length > 0 && (
+            <span className="muted">
+              {supports} support · {quotes.length - supports} contradict · newest first
+            </span>
+          )}
+        </div>
         <audio
           ref={audio}
           onPause={() => setPlaying(null)}
@@ -164,32 +206,68 @@ export default function EvidencePanel({ node, evidence, onSelectNode, onSelectEd
             The recording could not be played.
           </p>
         )}
-        {evidence.items.length === 0 && <p className="muted">Nothing has been said about this yet.</p>}
+        {quotes.length === 0 && <p className="muted">Nothing has been said about this yet.</p>}
         <ul className="quotes">
-          {evidence.items.map((item) => (
+          {quotes.map((item) => (
             <li key={item.id} className={`quote stance-${item.stance}`}>
+              <div className="quote-head">
+                <p className="quote-meta">
+                  <span className={`speaker speaker-${item.speaker_role}`}>{SPEAKERS[item.speaker_role]}</span>
+                  <span>{formatDate(item.said_at)}</span>
+                  <span className="quote-source">
+                    <Icon name={item.audio_media_id ? 'waveform' : 'page'} size={14} />
+                    {item.source_title}
+                  </span>
+                </p>
+                <p className="quote-tags">
+                  <span className={`stance stance-${item.stance}`}>
+                    <Icon name={item.stance === 'supports' ? 'supports' : 'contradicts'} size={14} />
+                    {item.stance === 'supports' ? 'Supports' : 'Contradicts'}
+                  </span>
+                  <span className={`tag basis-${item.basis}`}>
+                    {item.basis === 'explicit' ? 'Said directly' : 'Implied'}
+                  </span>
+                </p>
+              </div>
               <blockquote>“{item.quote}”</blockquote>
-              <p className="muted quote-meta">
-                {SPEAKERS[item.speaker_role]} · {formatDate(item.said_at)} · {item.source_title}
-              </p>
-              <p className="quote-tags">
-                <span className={`tag stance-${item.stance}`}>
-                  {item.stance === 'supports' ? 'Supports' : 'Contradicts'}
-                </span>
-                <span className={`tag basis-${item.basis}`}>
-                  {item.basis === 'explicit' ? 'Said directly' : 'Implied'}
-                </span>
+              <div className="quote-actions">
                 {item.audio_media_id && (
-                  <button type="button" className="quiet small" onClick={() => play(item)}>
+                  <button type="button" className="play" onClick={() => play(item)}>
+                    <span className="play-dot">
+                      <Icon name={playing === item.id ? 'pause' : 'play'} size={14} />
+                    </span>
                     {playing === item.id ? 'Pause' : `Play from ${formatTime(item.start_ms)}`}
                   </button>
                 )}
-                <Link to={`/sources/${item.source_id}#segment-${item.segment_id}`}>In the transcript</Link>
-              </p>
+                <Link to={`/sources/${item.source_id}#segment-${item.segment_id}`} className="to-transcript">
+                  Open in transcript
+                  <Icon name="arrow" size={15} />
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
       </section>
     </aside>
+  )
+}
+
+/** "Hypothesis: nobody has said this directly." with its first word set apart. */
+function StatusLine({ status, line, hypothesis }: { status: string; line: string; hypothesis: boolean }) {
+  const cut = line.indexOf(':')
+  return (
+    <p className={`status-line${hypothesis ? ' hypothesis' : ''}`} data-testid="status-line">
+      <span className={`status-mark status-${status}`} aria-hidden="true" />
+      <span>
+        {cut > 0 ? (
+          <>
+            <strong>{line.slice(0, cut + 1)}</strong>
+            {line.slice(cut + 1)}
+          </>
+        ) : (
+          line
+        )}
+      </span>
+    </p>
   )
 }

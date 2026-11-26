@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import text, update
+from sqlalchemy import func, text, update
 from sqlalchemy.orm import Session
 
 from atlas.db.models import Job
@@ -33,7 +33,9 @@ def enqueue(
         source_id=source_id,
         stage=stage.value,
         payload=payload or {},
-        run_after=datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=delay_seconds),
+        # The database clock, not this host's: atlas_claim_job compares run_after with now(),
+        # and a host clock even a millisecond ahead would hide a new job from the next claim.
+        run_after=func.now() + datetime.timedelta(seconds=delay_seconds),
     )
     session.add(job)
     session.flush()

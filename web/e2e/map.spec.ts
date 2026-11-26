@@ -31,9 +31,10 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   await expect(page.getByTestId('source-status')).toHaveText('Ready', { timeout: 60_000 })
 
   await page.getByRole('link', { name: 'Open the map' }).click()
-  // The map is a WebGL canvas; the same landmarks are mirrored as buttons for the keyboard.
-  await expect(page.locator('.map-frame.space canvas')).toBeVisible()
-  const landmark = page.getByRole('button', { name: /^Sensation: stomach in knots/ })
+  // The map is SVG regions with every landmark a real button (D-024).
+  const map = page.getByRole('group', { name: 'Map of your atlas' })
+  await expect(map.locator('.region')).toHaveCount(6)
+  const landmark = map.getByRole('button', { name: /^Sensation: stomach in knots/ })
   await landmark.focus()
   await page.keyboard.press('Enter')
   await expect(landmark).toHaveAttribute('aria-pressed', 'true')
@@ -51,7 +52,7 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   await page.screenshot({ path: testInfo.outputPath('map.png') })
 
   // The quote links back to its place in the transcript.
-  await quote.getByRole('link', { name: 'In the transcript' }).click()
+  await quote.getByRole('link', { name: 'Open in transcript' }).click()
   await expect(page.locator('.segment.target')).toContainText('my stomach has been in knots')
 })
 

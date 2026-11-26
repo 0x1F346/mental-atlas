@@ -32,6 +32,6 @@ export interface MapRendererProps {
 
 /**
  * The map is drawn only through this interface, so the renderer can be replaced with
- * no change to callers. The current implementation is a WebGL force-directed graph.
+ * no change to callers. The current implementation is SvgMapRenderer (D-024).
  */
 export type MapRenderer = ComponentType<MapRendererProps>

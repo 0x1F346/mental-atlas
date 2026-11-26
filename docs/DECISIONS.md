@@ -199,3 +199,42 @@ Entry format:
 - Reason: Owner's instruction. A ribbon in the graph's plane is used instead of a GL line because GL lines are one pixel wide.
 - Alternatives considered: three.js fat lines (`Line2`).
 - Approved by owner: yes (requested)
+
+## D-023 (2026-11-26) The web app takes the "living tissue" design
+- Context: A design session produced `docs/design/DESIGN_BRIEF.md` with two static mockups (`atlas.html`, `source.html`): a dark teal ground, spore-green accent, Newsreader and Figtree, glass bars, and a map drawn as six bordered regions with icon orbs. The map half of it reverses D-018, D-019, D-021 and D-022.
+- Decision: The web app is restyled to the brief, in the brief's order, one commit per step: tokens, fonts and top bar; evidence panel; sources pages; a new SVG map renderer behind `MapRenderer`.
+  - The owner approved superseding D-018, D-019, D-021 and D-022 with the new SVG renderer. Those entries stand until the renderer step lands; its details are logged as their own decision then.
+  - Fonts are self-hosted with `@fontsource-variable/figtree` 5.3.0 and `@fontsource-variable/newsreader` 5.3.0 (both published 2026-07-19), so no page load makes a request to Google.
+  - The top bar shows Atlas and Sources only. The mockup's inert "soon" labels for Patterns, Timeline and "Ask the atlas" are left out, because those are later phases.
+  - The nav item "Map" is renamed "Atlas", as in the mockup. Sign out stays in the top bar next to "Private to you", which the mockup does not show.
+  - Colours, type and spacing are CSS custom properties on `:root` in `web/src/index.css`.
+- Reason: Owner's instruction. Fonts and the "soon" labels were the owner's choice when asked.
+- Alternatives considered: Loading fonts from Google Fonts as the mockup does; system fonts only; showing the "soon" labels.
+- Approved by owner: yes (requested)
+
+## D-024 (2026-11-26) The map is SVG regions with landmark buttons; supersedes D-018, D-019, D-021 and D-022
+- Context: D-023 adopted the "living tissue" design. Its map draws the plan's original geography: six bordered regions, a landmark at its saved position, an icon per type, outlines by status, fading by age. The owner approved replacing the WebGL force-directed graph (D-018, refined by D-019, D-021 and D-022).
+- Decision: `web/src/map/SvgMapRenderer.tsx` replaces `ForceGraphRenderer.tsx` behind the unchanged `MapRenderer` interface. `/map`, `/nodes/{id}`, the evidence endpoints and the backend layout are unchanged. `react-force-graph-3d`, `three` and `@types/three` are removed; `d3-zoom`, `d3-selection` and `d3-shape` (already dependencies) do the work.
+  - Regions are drawn from the stored polygons as membranes: a solid outer line and a dotted inner line. The stored borders are shared between neighbours and sampled more coarsely than their wobble, so for drawing only, each outline drops near-duplicate points, is softened by a moving average and is inset by 0.6% (outer) and 1.4% (inner) of the map size. The stored polygons remain the record. Region names are placed towards each wedge's outer coast and at the top of Self.
+  - Landmarks are real `<button>` elements at exactly their saved positions; the visually hidden mirror list from D-018 is gone. Size grows with evidence (28 to 66 px), the orb fades from 1.0 to 0.4 over 120 days without a mention (counted from the newest mention on the map), and its label fades no further than #93AEAB. Stated is a solid outline, observed adds a ring, hypothesis is dashed with a fainter fill and carries its label in the button's name and tooltip. Landmarks keep their pixel size as the map zooms.
+  - Labels: the twelve landmarks with most evidence at the fitted view, doubling with every √2 of zoom, plus Me, the selected landmark and its neighbours. Zoomed out, unlabelled landmarks are small dots without icons; from 180% every landmark is a full orb. This was not in the mockup, which shows 29 landmarks; the development atlas holds 136.
+  - Relationships appear only for the selected landmark, as curved strands with a soft glow and short side branches, seeded by edge so they never change. `CONFLICTS_WITH` is dashed coral with no glow. A hypothesis strand is dotted and carries a visible "Hypothesis" tag at its middle. Strands are keyboard-focusable buttons.
+  - Each of the seventeen concept types has its own line icon in the mockup's style (owner's choice). The six main types keep the mockup's colours; the other eleven share a neutral #A9C2BE.
+  - The type filter shows chips for the six main types present, plus "More types", which opens chips for the rest (owner's choice). "Noticed by" keeps the code's word "Inferred" (owner's choice), with an "Anyone" chip for no filter. Source stays a dropdown, because it filters by one source rather than by kind. On phones the filters fold behind a "Filters" button.
+  - Motion (breathing orbs, the selected halo) stops under `prefers-reduced-motion`. Escape or a click on the background clears the selection. A landmark selected from the panel is brought into view if it is off-screen.
+- Reason: Owner's instruction and the design brief.
+- What this gives back from the plan, relative to D-018: drawn region borders, exact saved positions, type icons, distinct stated and observed outlines, and fading by age.
+- Not verified: frame rate with several hundred landmarks on a slow machine; screen-reader behaviour beyond names and roles.
+- Alternatives considered: restoring the pre-D-018 `SvgMapRenderer.tsx` from git as a base. Its structure (d3-zoom over SVG) was kept, but drawing landmarks as HTML buttons was simpler for the counter-scaled orbs and labels.
+- Approved by owner: yes (requested; questions answered 2026-11-26)
+
+## D-025 (2026-11-26) Evidence panel and sources pages: what the restyle kept and left out
+- Context: The design brief asks for the evidence panel and sources pages to be restyled, not rebuilt, with no change to the API. The mockups show some things the API does not provide.
+- Decision:
+  - Quotes in the panel are listed newest first. The API still returns them oldest first; the panel sorts by `said_at`, keeping the API order for ties. The link reads "Open in transcript". The section heading stays "Quotes", since the panel itself is labelled "Evidence". "Said directly" or "Implied" is still shown on each quote, which the mockup leaves out.
+  - Sources is one layout with two columns: the list and upload form on the left, the open source on the right. `/sources` and `/sources/:sourceId` stay separate routes, nested under it. On phones the open source comes first.
+  - Processing steps are the source's runs; once a source is ready they fold under "How it was processed". A transcript with no timings (text, test data) has no time column.
+  - Not built, because each needs new API data: the audio player with the speaker timeline, concept chips under transcript lines, highlighted quote spans in the transcript, "38 items drawn into the atlas" counts, and the "Show more quotes" control. The upload card does not accept dropped files; its heading does not claim it does.
+- Reason: The brief keeps callers and endpoints unchanged; anything needing an endpoint change is for the owner to ask for.
+- Alternatives considered: Adding a per-segment concepts endpoint for the transcript chips.
+- Approved by owner: not needed (within the approved restyle; the left-out items are listed for the owner)
