@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d'
+import { MOUSE } from 'three'
 
 import { landmarkLabel, prominentIds } from './appearance'
 import {
@@ -8,7 +9,6 @@ import {
   makeStar,
   makeStarfield,
   recentIds,
-  seeded,
   SPACE_BACKGROUND,
   textSprite,
   toSpace,
@@ -47,7 +47,6 @@ const FOCUS_DISTANCE = 430
 const EASE_MS = 1200
 const WELL_PULL = 0.035
 const HOME_PULL = 0.05
-const DEPTH = 70
 const NEIGHBOUR_DISTANCE = 95
 
 /** Each life area is a gravity well; each landmark is also drawn back to its own place. */
@@ -81,7 +80,7 @@ function endId(end: string | GraphNode): string {
 }
 
 /**
- * The map as a WebGL force-directed graph in a dark space theme. Landmarks are glowing
+ * The map as a flat (2D) force-directed graph, drawn with WebGL in a dark space theme. Landmarks are glowing
  * points sized by evidence and coloured by life area. Relationships appear only for
  * the selected landmark. A hidden list of buttons mirrors the landmarks, so the map
  * can be used from the keyboard and by screen readers.
@@ -121,7 +120,7 @@ export default function ForceGraphRenderer({
   const graphData = useMemo(() => {
     const nodes = visible.map((mark) => {
       const place = toSpace(mark.x, mark.y)
-      const home = { ...place, z: mark.is_self ? 0 : (seeded(mark.id, 7) - 0.5) * DEPTH }
+      const home = { ...place, z: 0 }
       let node = nodeCache.get(mark.id)
       if (!node) {
         // Seeded from map_positions.
@@ -178,11 +177,15 @@ export default function ForceGraphRenderer({
       const place = toSpace(region.anchor[0] ?? 500, region.anchor[1] ?? 500)
       const sprite = textSprite(region.name.toUpperCase(), AREA_COLOURS[region.key], 64, 22)
       sprite.material.opacity = 0.45
-      sprite.position.set(place.x * 1.42, place.y * 1.42 + (region.key === 'self' ? 62 : 0), -DEPTH)
+      sprite.position.set(place.x * 1.42, place.y * 1.42 + (region.key === 'self' ? 62 : 0), -1)
       sprite.raycast = () => undefined
       scene.add(sprite)
       return sprite
     })
+    // The graph is flat: dragging moves it and the wheel zooms; it cannot be turned.
+    const controls = instance.controls() as { enableRotate?: boolean; mouseButtons?: { LEFT?: number } }
+    controls.enableRotate = false
+    if (controls.mouseButtons) controls.mouseButtons.LEFT = MOUSE.PAN
     instance.cameraPosition(OVERVIEW, { x: 0, y: 0, z: 0 }, 0)
     return () => {
       scene.remove(backdrop, ...names)
@@ -256,6 +259,8 @@ export default function ForceGraphRenderer({
           width={size.width}
           height={size.height}
           graphData={graphData}
+          numDimensions={2}
+          controlType="orbit"
           backgroundColor={SPACE_BACKGROUND}
           showNavInfo={false}
           nodeLabel={(node) => node.mark.name}
