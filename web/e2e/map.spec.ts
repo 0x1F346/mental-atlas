@@ -41,8 +41,12 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   const panel = page.getByRole('complementary', { name: 'Evidence' })
   await expect(panel.getByRole('heading', { name: 'stomach in knots' })).toBeVisible()
   await expect(panel.getByTestId('status-line')).toHaveText(/^Stated/)
-  const quote = panel.getByRole('region', { name: 'Quotes' }).getByRole('listitem').first()
-  await expect(quote).toContainText('my stomach has been in knots since Monday')
+  // The atlas may already hold other quotes for this concept; find the one from this upload.
+  const quote = panel
+    .getByRole('region', { name: 'Quotes' })
+    .getByRole('listitem')
+    .filter({ hasText: 'my stomach has been in knots since Monday' })
+  await expect(quote).toHaveCount(1)
   await expect(quote).toContainText('Said directly')
   await page.screenshot({ path: testInfo.outputPath('map.png') })
 
