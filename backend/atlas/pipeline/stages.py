@@ -14,6 +14,7 @@ class Stage(StrEnum):
     MEDIA = "media"
     TRANSCRIBE = "transcribe"
     SEGMENT_TEXT = "segment_text"
+    IMPORT = "import"
     SPEAKERS = "speakers"
     STATEMENTS = "statements"
     CONCEPTS = "concepts"
@@ -27,6 +28,7 @@ STATUS_DURING: dict[Stage, SourceStatus] = {
     Stage.MEDIA: SourceStatus.TRANSCRIBING,
     Stage.TRANSCRIBE: SourceStatus.TRANSCRIBING,
     Stage.SEGMENT_TEXT: SourceStatus.TRANSCRIBING,
+    Stage.IMPORT: SourceStatus.EXTRACTING,
     Stage.SPEAKERS: SourceStatus.TRANSCRIBING,
     Stage.STATEMENTS: SourceStatus.EXTRACTING,
     Stage.CONCEPTS: SourceStatus.EXTRACTING,

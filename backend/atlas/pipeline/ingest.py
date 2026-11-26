@@ -18,6 +18,7 @@ from atlas.pipeline.stages import PIPELINE_VERSION, Defer, Next, Outcome, Stage,
 from atlas.providers.base import TranscriptResult, Word
 
 AUDIO_MIME = "audio/mp4"
+TEST_DATA_MIME = "application/json"
 POLL_SECONDS = 5.0
 MAX_KEY_TERMS = 1000
 TEXT_SPEAKER = "author"
@@ -57,6 +58,8 @@ def _run(command: list[str]) -> str:
 def media_stage(ctx: StageContext) -> Outcome:
     """Keep the original untouched and derive one mono audio file from it."""
     original = original_media(ctx)
+    if original.mime_type == TEST_DATA_MIME:
+        return Next(Stage.IMPORT)
     if is_text(original):
         return Next(Stage.SEGMENT_TEXT)
     source_path = ctx.workdir / "original"

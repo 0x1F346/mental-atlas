@@ -75,7 +75,8 @@ export default function SourcePage() {
 
   const speakers = transcript?.speakers ?? []
   const speakerById = new Map(speakers.map((speaker, index) => [speaker.id, { speaker, index }]))
-  const hasVoices = speakers.length > 1
+  // Test data has generated voices; there is nothing to listen to or swap.
+  const hasVoices = speakers.length > 1 && source.kind !== 'archive'
 
   return (
     <main className="page">
