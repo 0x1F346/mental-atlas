@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { api, ApiFailure, unwrap, type Source } from '../api/client'
+import { Icon } from '../icons'
 import { KIND_LABELS } from './labels'
 
 type Kind = Source['kind']
@@ -92,9 +93,14 @@ export default function UploadForm() {
   }
 
   return (
-    <form onSubmit={submit} className="stack card" aria-label="Add a source">
-      <h2>Add a source</h2>
-      <div className="row" role="radiogroup" aria-label="Input">
+    <form onSubmit={submit} className="stack upload-card" aria-label="Add a source">
+      <div className="upload-head">
+        <span className="upload-mark">
+          <Icon name="upload" size={18} />
+        </span>
+        <h2>Add a recording, voice note or journal page</h2>
+      </div>
+      <div className="segmented" role="radiogroup" aria-label="Input">
         <label className="inline">
           <input type="radio" checked={mode === 'file'} onChange={() => chooseMode('file')} />
           Recording

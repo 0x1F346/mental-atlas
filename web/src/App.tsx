@@ -1,10 +1,11 @@
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider, useAuth } from './auth'
+import { Icon } from './icons'
 import MapPage from './map/MapPage'
 import LoginPage from './sources/LoginPage'
 import SourcePage from './sources/SourcePage'
-import SourcesPage from './sources/SourcesPage'
+import SourcesPage, { NoSourceOpen } from './sources/SourcesPage'
 
 function Shell() {
   const { me, loading, signOut } = useAuth()
@@ -29,19 +30,8 @@ function Shell() {
         </nav>
         <div className="topbar-end">
           <span className="private">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="5" y="11" width="14" height="9" rx="2" />
-              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-            </svg>
-            Private to you
+            <Icon name="lock" size={15} />
+            <span className="private-text">Private to you</span>
           </span>
           <button type="button" className="quiet small" onClick={signOut}>
             Sign out
@@ -60,8 +50,10 @@ export default function App() {
         <Routes>
           <Route element={<Shell />}>
             <Route path="/" element={<MapPage />} />
-            <Route path="/sources" element={<SourcesPage />} />
-            <Route path="/sources/:sourceId" element={<SourcePage />} />
+            <Route path="/sources" element={<SourcesPage />}>
+              <Route index element={<NoSourceOpen />} />
+              <Route path=":sourceId" element={<SourcePage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

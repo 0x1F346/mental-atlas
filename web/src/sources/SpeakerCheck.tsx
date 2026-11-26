@@ -64,7 +64,7 @@ export default function SpeakerCheck({ source, speakers, required, onDone }: Pro
   }
 
   return (
-    <section className="card stack" aria-label="Which voice is yours?">
+    <section className={`card stack${required ? ' speaker-check' : ''}`} aria-label="Which voice is yours?">
       <h2>{required ? 'Which voice is yours?' : 'Voices'}</h2>
       {required && (
         <p>The voices could not be told apart with confidence. Listen to each, then choose yours.</p>

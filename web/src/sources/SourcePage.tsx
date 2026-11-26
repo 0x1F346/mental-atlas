@@ -2,10 +2,20 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { api, unwrap, type Source, type Transcript } from '../api/client'
-import { formatDate, formatTime, isSettled, KIND_LABELS, STAGE_LABELS, STATUS_LABELS } from './labels'
+import { Icon } from '../icons'
+import {
+  formatLongDate,
+  formatTime,
+  isSettled,
+  KIND_ICONS,
+  KIND_LABELS,
+  STAGE_LABELS,
+  STATUS_LABELS,
+} from './labels'
 import SpeakerCheck from './SpeakerCheck'
 
 const ROLE_LABELS = { self: 'Me', therapist: 'Therapist', other: 'Other' } as const
+const STEP_STATUS: Record<string, string> = { succeeded: 'Done', running: 'Working', failed: 'Failed' }
 
 export default function SourcePage() {
   const { sourceId = '' } = useParams()
@@ -65,52 +75,93 @@ export default function SourcePage() {
 
   if (missing) {
     return (
-      <main className="page">
+      <div className="source-placeholder">
         <p>No such source.</p>
-        <Link to="/sources">Back to sources</Link>
-      </main>
+      </div>
     )
   }
-  if (!source) return <main className="page" aria-busy="true" />
+  if (!source) return <div className="source-detail" aria-busy="true" />
 
   const speakers = transcript?.speakers ?? []
   const speakerById = new Map(speakers.map((speaker, index) => [speaker.id, { speaker, index }]))
+  const voiceName = (id: string) => {
+    const entry = speakerById.get(id)
+    const role = entry?.speaker.role
+    return { role: role ?? 'other', name: role ? ROLE_LABELS[role] : `Voice ${(entry?.index ?? 0) + 1}` }
+  }
   // Test data has generated voices; there is nothing to listen to or swap.
   const hasVoices = speakers.length > 1 && source.kind !== 'archive'
+  const stages = source.stages ?? []
+  const steps = (
+    <ol className="steps">
+      {stages.map((stage) => (
+        <li key={stage.stage} className={`step step-${stage.status}`}>
+          <span className="step-mark" aria-hidden="true">
+            {stage.status === 'succeeded' && <Icon name="supports" size={14} />}
+          </span>
+          <span>
+            {STAGE_LABELS[stage.stage] ?? stage.stage}
+            <span className="step-status">
+              {STEP_STATUS[stage.status] ?? stage.status}
+              {stage.error ? ` (${stage.error})` : ''}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  )
 
   return (
-    <main className="page">
-      <p>
-        <Link to="/sources">← Sources</Link>
-      </p>
-      <h1>{source.title}</h1>
-      <p className="muted">
-        {KIND_LABELS[source.kind]} · {formatDate(source.occurred_at)}
-        {source.duration_ms ? ` · ${formatTime(source.duration_ms)}` : ''}
-      </p>
-      <p>
-        <span className={`status status-${source.status}`} data-testid="source-status">
-          {STATUS_LABELS[source.status]}
-        </span>
-      </p>
+    <article className="source-detail">
+      <header className="source-head">
+        <p className="eyebrow eyebrow-icon">
+          <Icon name={KIND_ICONS[source.kind]} size={14} />
+          {KIND_LABELS[source.kind]} · {source.audio_media_id ? 'Audio' : 'Text'}
+        </p>
+        <h1>{source.title}</h1>
+        <p className="source-meta">
+          {formatLongDate(source.occurred_at)}
+          {source.duration_ms ? ` · ${formatTime(source.duration_ms)}` : ''}
+        </p>
+        <div className="row source-chips">
+          <span className={`status status-${source.status}`} data-testid="source-status">
+            {STATUS_LABELS[source.status]}
+          </span>
+          {speakers.length > 0 && <span className="eyebrow">Speakers</span>}
+          {speakers.map((speaker) => {
+            const voice = voiceName(speaker.id)
+            return (
+              <span key={speaker.id} className={`voice-chip speaker speaker-${voice.role}`}>
+                {voice.name}
+              </span>
+            )
+          })}
+        </div>
+      </header>
 
-      <section aria-label="Processing">
-        <ol className="stages">
-          {(source.stages ?? []).map((stage) => (
-            <li key={stage.stage} className={`stage stage-${stage.status}`}>
-              {STAGE_LABELS[stage.stage] ?? stage.stage}: {stage.status}
-              {stage.error ? ` (${stage.error})` : ''}
-            </li>
-          ))}
-        </ol>
-      </section>
+      {stages.length > 0 && (
+        <section aria-label="Processing steps">
+          {source.status === 'ready' ? (
+            <details className="steps-details">
+              <summary>How it was processed</summary>
+              {steps}
+            </details>
+          ) : (
+            steps
+          )}
+        </section>
+      )}
 
       {source.status === 'needs_speaker_check' && (
         <SpeakerCheck source={source} speakers={speakers} required onDone={refresh} />
       )}
 
-      <div className="row">
-        {source.status === 'ready' && <Link to="/">Open the map</Link>}
+      <div className="row source-actions">
+        {source.status === 'ready' && (
+          <Link to="/" className="button-link">
+            Open the map
+          </Link>
+        )}
         {(source.status === 'ready' || source.status === 'failed') && speakers.length > 0 && (
           <button type="button" className="quiet" onClick={() => reprocess('statements')}>
             Extract again
@@ -122,24 +173,22 @@ export default function SourcePage() {
       </div>
 
       {transcript && transcript.segments.length > 0 && (
-        <section aria-label="Transcript">
-          <h2>Transcript</h2>
-          <ol className="transcript">
+        <section aria-label="Transcript" className="transcript-section">
+          <h2 className="visually-hidden">Transcript</h2>
+          <ol className={`transcript${transcript.segments.some((item) => item.start_ms != null) ? ' timed' : ''}`}>
             {transcript.segments.map((segment) => {
-              const entry = speakerById.get(segment.speaker_id)
-              const role = entry?.speaker.role
-              const name = role ? ROLE_LABELS[role] : `Voice ${(entry?.index ?? 0) + 1}`
+              const voice = voiceName(segment.speaker_id)
+              const isTarget = target === `segment-${segment.id}`
               return (
-                <li
-                  key={segment.id}
-                  id={`segment-${segment.id}`}
-                  className={target === `segment-${segment.id}` ? 'segment target' : 'segment'}
-                >
-                  <span className="who">
-                    {name}
-                    {segment.start_ms != null && <span className="muted"> {formatTime(segment.start_ms)}</span>}
-                  </span>
-                  <p>{segment.text}</p>
+                <li key={segment.id} id={`segment-${segment.id}`} className={isTarget ? 'segment target' : 'segment'}>
+                  {segment.start_ms != null && <span className="segment-time">{formatTime(segment.start_ms)}</span>}
+                  <div>
+                    <span className={`who speaker speaker-${voice.role}`}>
+                      {voice.name}
+                      {isTarget && <span className="opened">Opened from the atlas</span>}
+                    </span>
+                    <p>{segment.text}</p>
+                  </div>
                 </li>
               )
             })}
@@ -150,6 +199,6 @@ export default function SourcePage() {
       {hasVoices && source.status !== 'needs_speaker_check' && isSettled(source.status) && (
         <SpeakerCheck source={source} speakers={speakers} required={false} onDone={refresh} />
       )}
-    </main>
+    </article>
   )
 }

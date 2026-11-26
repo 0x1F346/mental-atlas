@@ -1,4 +1,5 @@
 import type { Source } from '../api/client'
+import type { IconName } from '../icons'
 
 export const STATUS_LABELS: Record<Source['status'], string> = {
   uploaded: 'Waiting for the file',
@@ -15,6 +16,13 @@ export const KIND_LABELS: Record<Source['kind'], string> = {
   voice_note: 'Voice note',
   journal: 'Journal entry',
   archive: 'Archive item',
+}
+
+export const KIND_ICONS: Record<Source['kind'], IconName> = {
+  therapy_session: 'waveform',
+  voice_note: 'mic',
+  journal: 'page',
+  archive: 'page',
 }
 
 export const STAGE_LABELS: Record<string, string> = {
@@ -44,4 +52,8 @@ export function formatTime(ms: number | null | undefined): string {
 
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
+}
+
+export function formatLongDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'full' })
 }
