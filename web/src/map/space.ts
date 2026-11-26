@@ -1,0 +1,200 @@
+// Look and motion of the space map: colours by life area, size by evidence, and the
+// three.js objects each landmark is drawn with.
+import {
+  AdditiveBlending,
+  BufferGeometry,
+  CanvasTexture,
+  Float32BufferAttribute,
+  Group,
+  Points,
+  PointsMaterial,
+  Sprite,
+  SpriteMaterial,
+  type Texture,
+} from 'three'
+
+import type { LifeArea } from '../api/generated/vocabulary'
+import type { Landmark } from './types'
+
+export const SPACE_BACKGROUND = '#04050c'
+
+export const AREA_COLOURS: Record<LifeArea, string> = {
+  love: '#ff6f91',
+  family: '#ffb454',
+  friendships: '#8ee06b',
+  work: '#4fc3f7',
+  body_health: '#b39dff',
+  self: '#f5f1e6',
+}
+
+const MAP_CENTRE = 500
+const RECENT_DAYS = 30
+
+/** Map units (0 to 1000, y down) to graph space (centred, y up). */
+export function toSpace(x: number, y: number): { x: number; y: number } {
+  return { x: x - MAP_CENTRE, y: MAP_CENTRE - y }
+}
+
+/** A stable number in [0, 1) from an id, so depth and animation phase never change. */
+export function seeded(id: string, salt = 0): number {
+  let hash = 2166136261 ^ salt
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return ((hash >>> 0) % 100_000) / 100_000
+}
+
+/** Glow size grows with evidence count. */
+export function glowSize(evidenceCount: number): number {
+  return Math.min(24 + 10 * Math.sqrt(Math.max(evidenceCount, 0)), 90)
+}
+
+/** Landmarks last seen within a month of the newest appearance in the atlas. */
+export function recentIds(landmarks: Landmark[]): Set<string> {
+  const times = landmarks.flatMap((mark) => (mark.last_seen_at ? [Date.parse(mark.last_seen_at)] : []))
+  if (times.length === 0) return new Set()
+  const cutoff = Math.max(...times) - RECENT_DAYS * 86_400_000
+  return new Set(
+    landmarks
+      .filter((mark) => !mark.is_self && mark.last_seen_at && Date.parse(mark.last_seen_at) >= cutoff)
+      .map((mark) => mark.id),
+  )
+}
+
+let glowTexture: Texture | null = null
+
+function glow(): Texture {
+  if (glowTexture) return glowTexture
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 128
+  const context = canvas.getContext('2d')
+  if (context) {
+    const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64)
+    gradient.addColorStop(0, 'rgba(255,255,255,1)')
+    gradient.addColorStop(0.12, 'rgba(255,255,255,0.95)')
+    gradient.addColorStop(0.3, 'rgba(255,255,255,0.35)')
+    gradient.addColorStop(0.6, 'rgba(255,255,255,0.08)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    context.fillStyle = gradient
+    context.fillRect(0, 0, 128, 128)
+  }
+  glowTexture = new CanvasTexture(canvas)
+  return glowTexture
+}
+
+export function textSprite(text: string, colour: string, fontPx: number, height: number): Sprite {
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  const font = `500 ${fontPx}px system-ui, sans-serif`
+  let width = fontPx * text.length * 0.6
+  if (context) {
+    context.font = font
+    width = context.measureText(text).width
+  }
+  canvas.width = Math.ceil(width) + 16
+  canvas.height = Math.ceil(fontPx * 1.4)
+  if (context) {
+    context.font = font
+    context.fillStyle = colour
+    context.textBaseline = 'middle'
+    context.fillText(text, 8, canvas.height / 2)
+  }
+  const material = new SpriteMaterial({ map: new CanvasTexture(canvas), transparent: true, depthWrite: false })
+  const sprite = new Sprite(material)
+  sprite.scale.set((height * canvas.width) / canvas.height, height, 1)
+  return sprite
+}
+
+/** What the animation loop needs to know about one landmark's objects. */
+export interface Star {
+  group: Group
+  glow: Sprite
+  label: Sprite
+  size: number
+  phase: number
+  recent: boolean
+  hypothesis: boolean
+}
+
+export function makeStar(mark: Landmark, recent: boolean): Star {
+  const size = glowSize(mark.evidence_count)
+  const material = new SpriteMaterial({
+    map: glow(),
+    color: AREA_COLOURS[mark.life_area],
+    blending: AdditiveBlending,
+    transparent: true,
+    depthWrite: false,
+  })
+  const sprite = new Sprite(material)
+  sprite.scale.set(size, size, 1)
+  const name = mark.name.length > 30 ? `${mark.name.slice(0, 28)}…` : mark.name
+  const label = textSprite(name, '#e8ecf5', 44, 14)
+  label.position.set(0, -(size * 0.26 + 8), 0)
+  label.raycast = () => undefined // Labels never intercept a click meant for a star.
+  const group = new Group()
+  group.add(sprite, label)
+  return {
+    group,
+    glow: sprite,
+    label,
+    size,
+    phase: seeded(mark.id) * Math.PI * 2,
+    recent,
+    hypothesis: mark.is_hypothesis,
+  }
+}
+
+export interface StarState {
+  selected: boolean
+  linked: boolean
+  dimmed: boolean
+  labelled: boolean
+}
+
+/** One animation frame for one landmark: ambient drift, pulse, flicker and dimming. */
+export function animateStar(star: Star, state: StarState, seconds: number, still: boolean): void {
+  const t = still ? 0 : seconds
+  const { phase } = star
+  // Ambient drift: a slow wander around the landmark's place.
+  star.glow.position.set(
+    Math.sin(t * 0.41 + phase) * 2.4,
+    Math.cos(t * 0.33 + phase * 1.7) * 2.4,
+    Math.sin(t * 0.27 + phase * 0.6) * 2.4,
+  )
+  // Recently seen landmarks pulse.
+  let scale = star.recent && !still ? 1 + 0.2 * Math.sin(t * 2.3 + phase) : 1
+  if (state.selected) scale *= 1.45
+  else if (state.linked) scale *= 1.15
+  star.glow.scale.set(star.size * scale, star.size * scale, 1)
+
+  // A hypothesis is dimmer and flickers, so it never reads as settled.
+  let opacity = 1
+  if (star.hypothesis) {
+    const flicker = still ? 0 : Math.sin(t * 7.3 + phase) * Math.sin(t * 3.1 + phase * 2.3)
+    opacity = 0.5 + 0.22 * flicker
+  }
+  if (state.dimmed) opacity *= 0.13
+  star.glow.material.opacity = opacity
+  star.label.visible = state.labelled && !state.dimmed
+  star.label.material.opacity = state.selected || state.linked ? 1 : 0.7
+}
+
+/** A field of distant stars behind the atlas. */
+export function makeStarfield(count = 1600): Points {
+  const positions: number[] = []
+  for (let i = 0; i < count; i += 1) {
+    const radius = 1700 + seeded(`r${i}`) * 1800
+    const theta = seeded(`t${i}`) * Math.PI * 2
+    const phi = Math.acos(2 * seeded(`p${i}`) - 1)
+    positions.push(
+      radius * Math.sin(phi) * Math.cos(theta),
+      radius * Math.sin(phi) * Math.sin(theta),
+      radius * Math.cos(phi),
+    )
+  }
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  const material = new PointsMaterial({ color: '#9fb0d8', size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0.55 })
+  return new Points(geometry, material)
+}

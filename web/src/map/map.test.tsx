@@ -1,12 +1,28 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 
-import { landmarkOpacity, landmarkRadius, prominentIds } from './appearance'
+import { prominentIds } from './appearance'
 import EvidencePanel from './EvidencePanel'
+import ForceGraphRenderer from './ForceGraphRenderer'
 import { hiddenLandmarks } from './MapPage'
-import SvgMapRenderer from './SvgMapRenderer'
+import { AREA_COLOURS, glowSize, recentIds, seeded, toSpace } from './space'
 import type { Evidence, EvidenceItem, Landmark, MapDocument, NodeDetail } from './types'
+
+// jsdom has no WebGL: the graph library is replaced by a stub that records its props.
+const graphProps = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }))
+vi.mock('react-force-graph-3d', () => ({
+  default: (props: Record<string, unknown>) => {
+    graphProps.current = props
+    return <div data-testid="force-graph" />
+  },
+}))
+
+beforeEach(() => {
+  graphProps.current = null
+  // Pretend the browser can create a WebGL context.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+})
 
 function landmark(id: string, more: Partial<Landmark> = {}): Landmark {
   return {
@@ -51,11 +67,11 @@ const MAP: MapDocument = {
   ],
 }
 
-function renderMap(props: Partial<Parameters<typeof SvgMapRenderer>[0]> = {}) {
+function renderMap(props: Partial<Parameters<typeof ForceGraphRenderer>[0]> = {}) {
   const onSelectNode = vi.fn()
   const onSelectEdge = vi.fn()
   render(
-    <SvgMapRenderer
+    <ForceGraphRenderer
       document={MAP}
       hiddenIds={new Set()}
       selectedNodeId={null}
@@ -69,63 +85,92 @@ function renderMap(props: Partial<Parameters<typeof SvgMapRenderer>[0]> = {}) {
   return { onSelectNode, onSelectEdge }
 }
 
-test('draws regions and one landmark per concept, with status in the outline', () => {
+interface StubNode {
+  id: string
+  x: number
+  y: number
+  z: number
+  fx?: number
+  home: { x: number; y: number; z: number }
+  well: { x: number; y: number }
+}
+
+function graphData() {
+  return graphProps.current?.graphData as {
+    nodes: StubNode[]
+    links: { source: string; target: string; edgeId: string; isHypothesis: boolean }[]
+  }
+}
+
+test('every landmark is a node seeded from its map position, in a dark space', () => {
   renderMap()
-  expect(screen.getByText('Work')).toBeInTheDocument()
-  const dread = screen.getByRole('button', { name: 'Feeling: dread (stated)' })
-  const shame = screen.getByRole('button', { name: 'Feeling: shame (hypothesis)' })
-  const belief = screen.getByRole('button', { name: 'Belief: found out (observed)' })
-  expect(shame.querySelector('.landmark-disc.status-hypothesis')).not.toBeNull()
-  expect(dread.querySelector('.landmark-ring')).toBeNull()
-  expect(belief.querySelector('.landmark-ring')).not.toBeNull()
+  expect(screen.getByTestId('force-graph')).toBeInTheDocument()
+  expect(graphProps.current?.backgroundColor).toBe('#04050c')
+  const { nodes, links } = graphData()
+  expect(nodes.map((node) => node.id)).toEqual(['dread', 'shame', 'found out'])
+  const dread = nodes[0]
+  // Map position (300, 300) becomes (-200, 200): centred, with y pointing up.
+  expect([dread?.x, dread?.y]).toEqual([-200, 200])
+  expect(dread?.home.x).toBe(-200)
+  // Its gravity well is the anchor of its life area, Work at (300, 700).
+  expect(dread?.well).toEqual({ x: -200, y: -200 })
+  expect(links).toEqual([])
 })
 
-test('selecting a landmark reports it, by mouse and by keyboard', () => {
+test('landmarks can be selected from the keyboard-accessible list and from the graph', () => {
   const { onSelectNode } = renderMap()
-  fireEvent.click(screen.getByRole('button', { name: /dread/ }))
-  fireEvent.keyDown(screen.getByRole('button', { name: /shame/ }), { key: 'Enter' })
-  expect(onSelectNode.mock.calls).toEqual([['dread'], ['shame']])
+  const list = screen.getByRole('group', { name: 'Map of your atlas' })
+  expect(within(list).getByRole('button', { name: 'Feeling: shame (hypothesis)' })).toBeInTheDocument()
+  expect(within(list).getByRole('button', { name: 'Belief: found out (observed)' })).toBeInTheDocument()
+  fireEvent.click(within(list).getByRole('button', { name: 'Feeling: dread (stated)' }))
+  const click = graphProps.current?.onNodeClick as (node: { id: string }) => void
+  click({ id: 'shame' })
+  const background = graphProps.current?.onBackgroundClick as () => void
+  background()
+  expect(onSelectNode.mock.calls).toEqual([['dread'], ['shame'], [null]])
 })
 
 test('relationships are hidden until a landmark is selected', () => {
   const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true }]
   renderMap({ lines })
+  expect(graphData().links).toEqual([])
   expect(screen.queryByRole('button', { name: /Relationship/ })).toBeNull()
 })
 
-test('a selected landmark shows lines to its neighbours, which can be picked', () => {
+test('a selected landmark reveals links to its neighbours, with particles, and they can be picked', () => {
   const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true }]
   const { onSelectEdge } = renderMap({ lines, selectedNodeId: 'dread' })
-  const line = screen.getByRole('button', { name: 'Relationship: dread led to shame' })
-  expect(line.parentElement?.querySelector('.relationship.hypothesis')).not.toBeNull()
-  fireEvent.click(line)
-  expect(onSelectEdge).toHaveBeenCalledWith('e1')
-})
-
-test('zoomed out, only the largest landmarks are drawn in full', () => {
-  const many = Array.from({ length: 20 }, (_, i) => landmark(`n${i}`, { evidence_count: i + 1, x: 100 + i * 40 }))
-  render(
-    <SvgMapRenderer
-      document={{ ...MAP, landmarks: many }}
-      hiddenIds={new Set()}
-      selectedNodeId="n0"
-      selectedEdgeId={null}
-      lines={[]}
-      onSelectNode={vi.fn()}
-      onSelectEdge={vi.fn()}
-    />,
-  )
-  const detail = (name: string) => screen.getByRole('button', { name: `Feeling: ${name} (stated)` }).dataset.detail
-  expect(detail('n19')).toBe('full')
-  expect(detail('n3')).toBe('dot')
-  // The selected landmark is always drawn in full.
-  expect(detail('n0')).toBe('full')
+  expect(graphData().links).toEqual([{ source: 'dread', target: 'shame', edgeId: 'e1', isHypothesis: true }])
+  const particles = graphProps.current?.linkDirectionalParticles as (link: { isHypothesis: boolean }) => number
+  expect(particles({ isHypothesis: false })).toBeGreaterThan(particles({ isHypothesis: true }))
+  expect(particles({ isHypothesis: true })).toBeGreaterThan(0)
+  fireEvent.click(screen.getByRole('button', { name: 'Relationship: dread led to shame' }))
+  const pick = graphProps.current?.onLinkClick as (link: { edgeId: string }) => void
+  pick({ edgeId: 'e1' })
+  expect(onSelectEdge.mock.calls).toEqual([['e1'], ['e1']])
+  expect(screen.getByRole('button', { name: 'Feeling: dread (stated)' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('hidden landmarks are not drawn', () => {
   renderMap({ hiddenIds: new Set(['shame']) })
+  expect(graphData().nodes.map((node) => node.id)).toEqual(['dread', 'found out'])
   expect(screen.queryByRole('button', { name: /shame/ })).toBeNull()
-  expect(screen.getByRole('button', { name: /dread/ })).toBeInTheDocument()
+})
+
+test('the owner is fixed at the centre', () => {
+  const me = landmark('me', { type: 'person', is_self: true, life_area: 'self', x: 500, y: 500 })
+  renderMap({ document: { ...MAP, landmarks: [me, ...MAP.landmarks] } })
+  const node = graphData().nodes.find((item) => item.id === 'me')
+  expect([node?.fx, node?.x, node?.y, node?.z]).toEqual([0, 0, 0, 0])
+})
+
+test('without WebGL the landmarks are still listed and selectable', () => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+  const { onSelectNode } = renderMap()
+  expect(screen.queryByTestId('force-graph')).toBeNull()
+  expect(screen.getByText(/WebGL is unavailable/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Feeling: dread (stated)' }))
+  expect(onSelectNode).toHaveBeenCalledWith('dread')
 })
 
 test('filters by type, by who noticed it and by source', () => {
@@ -142,14 +187,20 @@ test('filters by type, by who noticed it and by source', () => {
   expect(hiddenLandmarks(marks, { ...none, sourceId: 's2' })).toEqual(new Set(['a']))
 })
 
-test('size grows with evidence and landmarks fade with age', () => {
-  expect(landmarkRadius(9)).toBeGreaterThan(landmarkRadius(1))
-  expect(landmarkRadius(10_000)).toBeLessThanOrEqual(26)
-  const now = new Date('2026-06-01T00:00:00Z')
-  expect(landmarkOpacity('2026-05-25T00:00:00Z', now)).toBe(1)
-  expect(landmarkOpacity('2025-12-01T00:00:00Z', now)).toBeLessThan(0.9)
-  expect(landmarkOpacity('2020-01-01T00:00:00Z', now)).toBeCloseTo(0.45)
-  expect(landmarkOpacity(null, now)).toBe(1)
+test('size grows with evidence, colour follows life area, and recent landmarks are found', () => {
+  expect(glowSize(9)).toBeGreaterThan(glowSize(1))
+  expect(glowSize(10_000)).toBeLessThanOrEqual(90)
+  expect(new Set(Object.values(AREA_COLOURS)).size).toBe(6)
+  expect(toSpace(500, 500)).toEqual({ x: 0, y: 0 })
+  expect(seeded('abc')).toBe(seeded('abc'))
+  expect(seeded('abc')).not.toBe(seeded('abd'))
+  const marks = [
+    landmark('new', { last_seen_at: '2026-03-01T00:00:00Z' }),
+    landmark('near', { last_seen_at: '2026-02-10T00:00:00Z' }),
+    landmark('old', { last_seen_at: '2025-06-01T00:00:00Z' }),
+    landmark('never', { last_seen_at: null }),
+  ]
+  expect(recentIds(marks)).toEqual(new Set(['new', 'near']))
   expect(prominentIds(MAP.landmarks, 1)).toEqual(new Set(['dread']))
 })
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { api, unwrap, type Source } from '../api/client'
@@ -6,11 +6,10 @@ import { NODE_TYPES, type NodeType } from '../api/generated/vocabulary'
 import { NOTICED_LABELS, TYPE_LABELS } from './appearance'
 import EvidencePanel from './EvidencePanel'
 import Legend from './Legend'
-import SvgMapRenderer from './SvgMapRenderer'
 import type { Evidence, Landmark, MapDocument, MapRenderer, NodeDetail, RelationshipLine } from './types'
 
-// The one place the renderer is chosen.
-const Renderer: MapRenderer = SvgMapRenderer
+// The one place the renderer is chosen. It is loaded on demand: the WebGL library is large.
+const Renderer: MapRenderer = lazy(() => import('./ForceGraphRenderer'))
 
 type Noticed = keyof typeof NOTICED_LABELS
 const NOTICED: Noticed[] = ['self', 'therapist', 'ai']
@@ -176,16 +175,18 @@ export default function MapPage() {
               Nothing on the map yet. <Link to="/sources">Add a source</Link> to begin.
             </p>
           )}
-          <Renderer
-            document={map}
-            hiddenIds={hidden}
-            selectedNodeId={nodeId}
-            selectedEdgeId={edgeId}
-            lines={lines}
-            onSelectNode={selectNode}
-            onSelectEdge={setEdgeId}
-          />
-          <Legend types={typesPresent} />
+          <Suspense fallback={<div className="map-frame space" aria-busy="true" />}>
+            <Renderer
+              document={map}
+              hiddenIds={hidden}
+              selectedNodeId={nodeId}
+              selectedEdgeId={edgeId}
+              lines={lines}
+              onSelectNode={selectNode}
+              onSelectEdge={setEdgeId}
+            />
+          </Suspense>
+          <Legend />
         </div>
         {evidence && nodeId && (
           <EvidencePanel

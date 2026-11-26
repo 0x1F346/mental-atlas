@@ -1,38 +1,21 @@
-import type { NodeType } from '../api/generated/vocabulary'
-import { TYPE_ICONS, TYPE_LABELS } from './appearance'
+import { LIFE_AREA_LABELS, LIFE_AREAS } from '../api/generated/vocabulary'
+import { AREA_COLOURS } from './space'
 
-const STATUSES = [
-  { status: 'stated', label: 'Stated: you said it' },
-  { status: 'observed', label: 'Observed: your therapist said it' },
-  { status: 'hypothesis', label: 'Hypothesis: nobody has said it directly' },
-] as const
-
-export default function Legend({ types }: { types: NodeType[] }) {
+export default function Legend() {
   return (
     <details className="legend">
       <summary>Legend</summary>
       <ul>
-        {STATUSES.map(({ status, label }) => (
-          <li key={status}>
-            <svg viewBox="-16 -16 32 32" width="26" height="26" aria-hidden="true">
-              {status === 'observed' && <circle r={13.5} className="landmark-ring" />}
-              <circle r={10} className={`landmark-disc status-${status}`} />
-            </svg>
-            {label}
+        {LIFE_AREAS.map((area) => (
+          <li key={area}>
+            <span className="swatch" style={{ background: AREA_COLOURS[area] }} aria-hidden="true" />
+            {LIFE_AREA_LABELS[area]}
           </li>
         ))}
       </ul>
-      <ul>
-        {types.map((type) => (
-          <li key={type}>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path d={TYPE_ICONS[type]} className="landmark-icon" />
-            </svg>
-            {TYPE_LABELS[type]}
-          </li>
-        ))}
-      </ul>
-      <p className="muted">Bigger means more evidence. Fainter means not seen for a while.</p>
+      <p>Bigger means more evidence. A pulse means seen recently.</p>
+      <p>A dim flicker is a hypothesis: nobody has said it directly.</p>
+      <p>Select a point to see what it is linked to. Drag to turn, scroll to zoom.</p>
     </details>
   )
 }

@@ -31,7 +31,7 @@ export interface MapRendererProps {
 }
 
 /**
- * The map is drawn only through this interface. The SVG implementation can be
- * swapped for a canvas one when measured frame rates drop, with no change to callers.
+ * The map is drawn only through this interface, so the renderer can be replaced with
+ * no change to callers. The current implementation is a WebGL force-directed graph.
  */
 export type MapRenderer = ComponentType<MapRendererProps>

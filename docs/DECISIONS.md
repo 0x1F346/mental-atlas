@@ -148,3 +148,21 @@ Entry format:
 - Reason: The fixed items could corrupt the atlas, store an inference as a statement, or block deletion. The others are bounded and belong with the hosting work.
 - Alternatives considered: A unique constraint on concept names, rejected because two different people or events may share a name.
 - Approved by owner: not needed
+
+## D-018 (2026-11-25) The map is a WebGL force-directed graph in a space theme
+- Context: The plan's settled decision for the map is six fixed regions with drawn borders, rendered in SVG, with a concept keeping its position once placed. The owner asked to replace the renderer with a WebGL force-directed graph: dark space theme, glowing points sized by evidence and coloured by life area, each life area a gravity well with no drawn borders, positions seeded from `map_positions`, ambient drift, particles along links, a pulse on recently seen nodes, a dim flicker for hypotheses, and on click a camera ease with neighbours revealed and the rest dimmed.
+- Decision: `web/src/map/ForceGraphRenderer.tsx` replaces `SvgMapRenderer.tsx` behind the same `MapRenderer` interface. `/map`, `/nodes/{id}`, the evidence endpoints, the evidence panel, the filters and the backend layout are unchanged.
+  - Library: `react-force-graph-3d` 1.29.2 (released 2026-09-29) on `3d-force-graph` 1.80.2 (released 2026-11-05) and `three` 0.187. The repository is not archived and both packages had releases in the last two months. The single 3D package is used, not the `react-force-graph` umbrella, which also pulls in the VR and AR builds. It is loaded on demand because it is large.
+  - Positions: each node starts at its saved map position. A force pulls it to its life area's anchor (the gravity well) and a second, stronger one back to its own saved place, so the learned geography survives. What the simulation does is not saved; `map_positions` stays the record.
+  - Relationships are still hidden until a landmark is selected, because `/map` carries no edges. Selecting one adds its links, with particles, and a link force spreads its neighbours around it.
+  - Accessibility and tests: the canvas is mirrored by a visually hidden list of buttons, one per landmark and one per shown relationship. With no WebGL the list is shown instead. `prefers-reduced-motion` turns off drift, pulse, flicker, particles and camera easing.
+- Reason: Owner's instruction.
+- What this gives up from the plan, for the owner to accept or ask to restore:
+  - Region borders and coastlines are no longer drawn. The stored region polygons are unused by the renderer.
+  - A landmark no longer sits at exactly its saved position; it settles near it.
+  - Concept type is no longer shown on the map (no icons); it is in the panel and the filters.
+  - Stated and observed look the same on the map. Only a hypothesis is marked, by its flicker; the panel still labels all three.
+  - Fading by age is replaced by a pulse on landmarks seen within a month of the newest appearance.
+- Not verified: frame rate with hundreds of landmarks, and rendering on a real GPU. It was looked at in headless Chromium with software rendering only.
+- Alternatives considered: `react-force-graph-2d`, which draws on a 2D canvas and is not WebGL.
+- Approved by owner: yes (requested)

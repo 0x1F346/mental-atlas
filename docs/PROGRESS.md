@@ -38,6 +38,9 @@ In order. Nothing below has been done.
 Done when the owner can open any item on the map and read the quotes behind it. That is the V1 exit.
 
 ## Milestone reports
+### Map renderer replaced after M5 (2026-11-25)
+- The SVG map was replaced by a WebGL force-directed graph at the owner's request (D-018). `make verify` and `make e2e` pass with it. Checked by eye in headless Chromium with software rendering; not on a real GPU.
+
 ### M6 First real session (2026-11-25), in progress
 - M6-T2: `make bucket-versioning` reported `Enabled`; `make backup` wrote a dump; `make restore-check` loaded it into a scratch database and the row counts matched the live database. Run against the local development database, which held no sources.
 - An independent review of the backend found eleven defects; all eleven were addressed and five smaller points were left open (D-017).
