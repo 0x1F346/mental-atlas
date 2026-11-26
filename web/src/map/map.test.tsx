@@ -143,13 +143,13 @@ test('relationships are hidden until a landmark is selected', () => {
   expect(screen.queryByRole('button', { name: /Relationship/ })).toBeNull()
 })
 
-test('a selected landmark reveals links to its neighbours, with particles, and they can be picked', () => {
+test('a selected landmark reveals links to its neighbours, and they can be picked', () => {
   const lines = [{ edgeId: 'e1', type: 'LED_TO', otherId: 'shame', isHypothesis: true }]
   const { onSelectEdge } = renderMap({ lines, selectedNodeId: 'dread' })
   expect(graphData().links).toEqual([{ source: 'dread', target: 'shame', edgeId: 'e1', isHypothesis: true }])
-  const particles = graphProps.current?.linkDirectionalParticles as (link: { isHypothesis: boolean }) => number
-  expect(particles({ isHypothesis: false })).toBeGreaterThan(particles({ isHypothesis: true }))
-  expect(particles({ isHypothesis: true })).toBeGreaterThan(0)
+  // Links are plain graded lines: no particles travel along them.
+  expect(graphProps.current?.linkDirectionalParticles).toBeUndefined()
+  expect(typeof graphProps.current?.linkThreeObject).toBe('function')
   fireEvent.click(screen.getByRole('button', { name: 'Relationship: dread led to shame' }))
   const pick = graphProps.current?.onLinkClick as (link: { edgeId: string }) => void
   pick({ edgeId: 'e1' })

@@ -2,10 +2,14 @@
 // three.js objects each landmark is drawn with.
 import {
   AdditiveBlending,
+  Color,
+  DoubleSide,
   BufferGeometry,
   CanvasTexture,
   Float32BufferAttribute,
   Group,
+  Mesh,
+  MeshBasicMaterial,
   Points,
   PointsMaterial,
   Sprite,
@@ -233,6 +237,59 @@ export function animateStar(star: Star, state: StarState, seconds: number, still
   star.glow.material.opacity = opacity
   star.label.visible = state.labelled && !state.dimmed
   star.label.material.opacity = state.selected || state.linked ? 1 : 0.7
+}
+
+const LINK_WIDTH = 1.6 // In map units; the graph is flat, so a ribbon in its plane is a line.
+const SELECTED_LINK_WIDTH = 3.2
+
+/**
+ * A relationship line whose colour runs from the origin's life-area colour to the
+ * connecting point's. A hypothesis is fainter.
+ */
+export function makeLink(from: LifeArea, to: LifeArea, hypothesis: boolean): Mesh {
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(new Array<number>(12).fill(0), 3))
+  const start = new Color(AREA_COLOURS[from])
+  const end = new Color(AREA_COLOURS[to])
+  // Two corners at the origin's colour, two at the connecting point's.
+  const colours = [start, start, end, end].flatMap((colour) => [colour.r, colour.g, colour.b])
+  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3))
+  geometry.setIndex([0, 1, 2, 2, 1, 3])
+  const material = new MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: hypothesis ? 0.4 : 0.9,
+    side: DoubleSide,
+    depthWrite: false,
+  })
+  const line = new Mesh(geometry, material)
+  // Its ends move every frame, so the bounds it was created with must not hide it.
+  line.frustumCulled = false
+  return line
+}
+
+interface Point2 {
+  x: number
+  y: number
+}
+
+/** Stretch a relationship line between its two ends as they move. */
+export function placeLink(line: Mesh, start: Point2, end: Point2, selected: boolean): void {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const length = Math.hypot(dx, dy) || 1
+  const half = (selected ? SELECTED_LINK_WIDTH : LINK_WIDTH) / 2
+  const ox = (-dy / length) * half
+  const oy = (dx / length) * half
+  const position = line.geometry.getAttribute('position')
+  // Just behind the landmarks, which sit at depth 0. A flat simulation gives no depth.
+  const z = -0.5
+  position.setXYZ(0, start.x + ox, start.y + oy, z)
+  position.setXYZ(1, start.x - ox, start.y - oy, z)
+  position.setXYZ(2, end.x + ox, end.y + oy, z)
+  position.setXYZ(3, end.x - ox, end.y - oy, z)
+  position.needsUpdate = true
+  line.geometry.computeBoundingSphere()
 }
 
 /** A field of distant stars behind the atlas. */
