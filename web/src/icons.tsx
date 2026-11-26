@@ -27,7 +27,34 @@ const PATHS = {
   behaviour: (
     <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5" />
   ),
-  concept: <circle cx="12" cy="12" r="4" />,
+  group: (
+    <>
+      <circle cx="9" cy="8.5" r="3" />
+      <circle cx="16.5" cy="9.5" r="2.5" />
+      <path d="M3.5 19.5c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5M15 14.2c3 .2 5.5 2.1 5.5 5.3" />
+    </>
+  ),
+  sensation: <path d="M3 12h4l2-5 3 10 2-6 1.5 1H21" />,
+  need: <path d="M12 3.5s6 6.4 6 10.5a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z" />,
+  value: <path d="M7 4.5h10l4 4.5-9 11-9-11zM3 9h18M10 4.5 12 20M14 4.5 12 20" />,
+  goal: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </>
+  ),
+  trait: <path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z" />,
+  role: <path d="M5 5h14v6a7 7 0 0 1-14 0zM9 10h.01M15 10h.01M9.5 14.5c1.4 1 3.6 1 5 0" />,
+  pattern: <path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0" />,
+  tension: <path d="M3 12h7M7 9l3 3-3 3M21 12h-7M17 9l-3 3 3 3" />,
+  blind_spot: <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM4.5 19.5l15-15" />,
+  unsorted: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.4M12 17h.01" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   play: <path d="M8 5.5v13l11-6.5z" fill="currentColor" />,
   pause: <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" />,
@@ -76,16 +103,7 @@ export function Icon({ name, size = 16, className }: { name: IconName; size?: nu
   )
 }
 
-const TYPE_ICONS: Partial<Record<NodeType, IconName>> = {
-  person: 'person',
-  situation: 'situation',
-  event: 'event',
-  feeling: 'feeling',
-  belief: 'belief',
-  behaviour: 'behaviour',
-}
-
-/** The icon for a concept type. Types without their own icon share a plain one. */
+/** Every concept type has its own icon (D-024). */
 export function typeIcon(type: NodeType): IconName {
-  return TYPE_ICONS[type] ?? 'concept'
+  return type
 }
