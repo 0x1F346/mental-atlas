@@ -158,8 +158,25 @@ def commit_stage(ctx: StageContext) -> Outcome:
     if len(present) != len(set(reused)):
         return Next(Stage.CONCEPTS, usage={"rematch": 1})
 
+    return write_proposal(
+        ctx, statements_run, concepts_run, statements_run.raw_output["statements"], proposal
+    )
+
+
+def write_proposal(
+    ctx: StageContext,
+    statements_run: Run,
+    concepts_run: Run,
+    drafts: list[dict[str, Any]],
+    proposal: dict[str, Any],
+) -> Outcome:
+    """Insert validated statements and a matched proposal, then recompute and enforce the rules.
+
+    Statements carry `statements_run`'s id; everything else carries `concepts_run`'s.
+    """
+    session = ctx.session
     # 1. Statements, new nodes, new relationships and evidence links.
-    statements = insert_statements(ctx, statements_run, statements_run.raw_output["statements"])
+    statements = insert_statements(ctx, statements_run, drafts)
     node_ids: dict[str, uuid.UUID] = {}
     touched_nodes: set[uuid.UUID] = set()
     for item in proposal["nodes"]:

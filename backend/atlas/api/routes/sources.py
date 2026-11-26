@@ -1,10 +1,11 @@
 """Sources: upload, status, transcript, speaker roles, reprocessing and retraction."""
 
 import datetime
+import json
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, model_validator
@@ -21,6 +22,7 @@ from atlas.pipeline import queue, sources
 from atlas.pipeline.sources import DuplicateSource
 from atlas.pipeline.speakers import apply_roles, valid_assignment
 from atlas.pipeline.stages import STATUS_DURING, Stage
+from atlas.pipeline.test_data import BlobError, parse_test_data
 from atlas.providers.base import Providers
 from atlas.providers.registry import get_providers
 
@@ -35,6 +37,7 @@ REPROCESSABLE = frozenset(
         Stage.MEDIA,
         Stage.TRANSCRIBE,
         Stage.SEGMENT_TEXT,
+        Stage.IMPORT,
         Stage.SPEAKERS,
         Stage.STATEMENTS,
         Stage.CONCEPTS,
@@ -50,11 +53,15 @@ class SourceCreate(BaseModel):
     # Either pasted text, or the content type of a file the browser will upload.
     text: str | None = Field(default=None, min_length=1)
     content_type: str | None = None
+    # Or test data: concepts by type, such as {"person": [...], "feeling": [...]}.
+    # See atlas/pipeline/test_data.py for the format.
+    test_data: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def one_input(self) -> "SourceCreate":
-        if (self.text is None) == (self.content_type is None):
-            raise ValueError("give either text or content_type")
+        given = [self.text is not None, self.content_type is not None, self.test_data is not None]
+        if sum(given) != 1:
+            raise ValueError("give exactly one of text, content_type or test_data")
         return self
 
 
@@ -183,6 +190,26 @@ def create_source(
     body: SourceCreate, auth: AuthDep, db: DbDep, providers: ProvidersDep, settings: SettingsDep
 ) -> SourceCreated:
     names = [name.strip() for name in body.expected_names if name.strip()]
+    if body.test_data is not None:
+        try:
+            parse_test_data(body.test_data)
+        except BlobError as error:
+            # The message names where the problem is; it never repeats what was sent.
+            raise ApiError(422, "invalid_test_data", str(error)) from error
+        payload = json.dumps(body.test_data, sort_keys=True).encode()
+        try:
+            source = sources.create_test_data_source(
+                db,
+                auth.user_id,
+                providers.blobs,
+                title=body.title,
+                occurred_at=body.occurred_at,
+                payload=payload,
+            )
+        except DuplicateSource as error:
+            raise _duplicate(error) from error
+        log.info("source.created", source_id=source.id, kind=source.kind, input="test_data")
+        return SourceCreated(source=_out(db, source), upload=None)
     if body.text is not None:
         try:
             source = sources.create_text_source(
@@ -334,7 +361,8 @@ def reprocess(source_id: uuid.UUID, body: ReprocessRequest, db: DbDep) -> Source
     if source.status == SourceStatus.UPLOADED.value:
         raise ApiError(409, "upload_missing", "The file has not been uploaded yet.")
     has_speakers = db.scalars(select(Speaker.id).where(Speaker.source_id == source.id)).first()
-    if body.stage not in (Stage.MEDIA, Stage.TRANSCRIBE, Stage.SEGMENT_TEXT) and not has_speakers:
+    early = (Stage.MEDIA, Stage.TRANSCRIBE, Stage.SEGMENT_TEXT, Stage.IMPORT)
+    if body.stage not in early and not has_speakers:
         raise ApiError(409, "no_transcript", "This source has no transcript yet.")
     sources.reprocess(db, source, body.stage)
     log.info("source.reprocess", source_id=source.id, stage=body.stage)

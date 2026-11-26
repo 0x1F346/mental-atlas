@@ -1,0 +1,45 @@
+{
+  "person": [
+    {"name": "Dana", "relationship_to_owner": "manager", "life_area": "work", "count": 4},
+    {"name": "my mum", "aliases": ["Ruth"], "relationship_to_owner": "mother", "life_area": "family", "count": 3},
+    {"name": "Sam", "life_area": "friendships"}
+  ],
+  "group": [{"name": "the platform team", "kind": "employer", "life_area": "work"}],
+  "situation": [{"name": "Living alone since the move", "life_area": "self", "start": "2025-09-01"}],
+  "event": [
+    {"name": "Review with Dana, January 2026", "life_area": "work", "when": "2026-01-08", "precision": "day", "occurrence": "happened"},
+    {"name": "Planning offsite, February 2026", "life_area": "work", "when": "2026-02-09", "precision": "day", "occurrence": "planned"}
+  ],
+  "feeling": [
+    {"name": "dread", "life_area": "work", "count": 5, "quotes": ["I felt dread for days before the review."]},
+    {"name": "relief", "life_area": "work", "status": "observed"},
+    {"name": "shame", "life_area": "family", "status": "hypothesis", "count": 2},
+    "loneliness"
+  ],
+  "sensation": [{"name": "stomach in knots", "life_area": "body_health", "body_area": "stomach"}],
+  "belief": [
+    {"name": "I am not good enough for this job", "life_area": "work", "count": 3},
+    {"name": "I will be found out", "life_area": "work", "status": "observed"}
+  ],
+  "behaviour": [
+    {"name": "going quiet", "life_area": "work", "count": 2},
+    {"name": "going for a run", "kind": "coping_tool", "life_area": "body_health"}
+  ],
+  "need": [{"name": "to feel safe to speak up", "life_area": "self"}],
+  "value": ["honesty"],
+  "goal": [{"name": "Answer Dana the same day", "life_area": "work", "progress": "open"}],
+  "trait": [{"name": "persistence", "kind": "strength", "life_area": "self"}],
+  "role": [{"name": "the reliable one", "life_area": "family"}],
+  "relationships": [
+    {"type": "OCCURRED_IN", "from": "dread", "to": "Review with Dana, January 2026"},
+    {"type": "INVOLVES", "from": "Review with Dana, January 2026", "to": "Dana"},
+    {"type": "LED_TO", "from": "dread", "to": "going quiet", "status": "hypothesis"},
+    {"type": "HOLDS", "from": "me", "to": "I am not good enough for this job"},
+    {"type": "ABOUT", "from": "I am not good enough for this job", "to": "me"},
+    {"type": "HELPS", "from": "going for a run", "to": "relief"},
+    {"type": "BELONGS_TO", "from": "Dana", "to": "the platform team"},
+    {"type": "HOLDS", "from": "Ruth", "to": "the reliable one"},
+    {"type": "HAS", "from": "me", "to": "to feel safe to speak up"},
+    {"type": "BLOCKS", "from": "going quiet", "to": "Answer Dana the same day"}
+  ]
+}

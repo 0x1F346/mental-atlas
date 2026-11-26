@@ -138,6 +138,11 @@ button.danger {
   color: var(--muted);
 }
 
+textarea.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
 .error {
   color: var(--danger);
   margin: 0;

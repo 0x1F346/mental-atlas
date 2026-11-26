@@ -12,6 +12,7 @@ from atlas.db.ids import new_id
 from atlas.db.models import MediaFile, Run, Source
 from atlas.domain.generated.vocabulary import SourceKind, SourceStatus
 from atlas.pipeline import queue
+from atlas.pipeline.ingest import TEST_DATA_MIME
 from atlas.pipeline.stages import PIPELINE_VERSION, STATUS_DURING, Stage
 from atlas.providers.base import BlobStore
 
@@ -22,6 +23,7 @@ STAGE_ORDER: tuple[Stage, ...] = (
     Stage.MEDIA,
     Stage.TRANSCRIBE,
     Stage.SEGMENT_TEXT,
+    Stage.IMPORT,
     Stage.SPEAKERS,
     Stage.STATEMENTS,
     Stage.CONCEPTS,
@@ -138,6 +140,45 @@ def complete_upload(session: Session, source: Source, blobs: BlobStore, workdir:
     start(session, source)
 
 
+def is_test_data(session: Session, source: Source) -> bool:
+    mime = session.scalar(
+        select(MediaFile.mime_type).where(
+            MediaFile.source_id == source.id, MediaFile.role == "original"
+        )
+    )
+    return mime == TEST_DATA_MIME
+
+
+def create_test_data_source(
+    session: Session,
+    user_id: uuid.UUID,
+    blobs: BlobStore,
+    *,
+    title: str,
+    occurred_at: object,
+    payload: bytes,
+) -> Source:
+    """Store a validated test-data blob as the source's original file and queue the import."""
+    sha256 = hashlib.sha256(payload).hexdigest()
+    existing = find_duplicate(session, sha256)
+    if existing is not None:
+        raise DuplicateSource(existing)
+    source, media = create_source(
+        session,
+        user_id,
+        kind=SourceKind.ARCHIVE,
+        title=title,
+        occurred_at=occurred_at,
+        expected_names=[],
+        mime_type=TEST_DATA_MIME,
+    )
+    source.metadata_ = {"test_data": True}
+    media.sha256, media.bytes = sha256, len(payload)
+    blobs.put(media.storage_key, payload, TEST_DATA_MIME)
+    start(session, source)
+    return source
+
+
 def start(session: Session, source: Source) -> None:
     queue.enqueue(session, source.user_id, source.id, Stage.MEDIA)
     source.status = STATUS_DURING[Stage.MEDIA].value
@@ -145,6 +186,11 @@ def start(session: Session, source: Source) -> None:
 
 def reprocess(session: Session, source: Source, stage: Stage, *, force: bool = False) -> None:
     """Run the pipeline again from `stage`: retract that stage and every later one first."""
+    # Test data has no transcript to extract from: its concepts come from the import stage.
+    if stage in (Stage.SPEAKERS, Stage.STATEMENTS, Stage.CONCEPTS) and is_test_data(
+        session, source
+    ):
+        stage = Stage.IMPORT
     queue.cancel_pending(session, source.id)
     later = STAGE_ORDER[STAGE_ORDER.index(stage) :]
     runs = session.scalars(

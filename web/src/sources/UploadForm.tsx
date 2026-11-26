@@ -7,22 +7,35 @@ import { KIND_LABELS } from './labels'
 
 type Kind = Source['kind']
 const FILE_KINDS: Kind[] = ['therapy_session', 'voice_note']
+type Mode = 'file' | 'text' | 'test'
+const MODE_KINDS: Record<Mode, Kind> = { file: 'therapy_session', text: 'journal', test: 'archive' }
+const TEST_DATA_HINT = `{
+  "person": [{ "name": "Dana", "life_area": "work" }],
+  "feeling": ["dread", { "name": "shame", "status": "hypothesis" }],
+  "relationships": [{ "type": "ABOUT", "from": "dread", "to": "Dana" }]
+}`
 
 export default function UploadForm() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'file' | 'text'>('file')
+  const [mode, setMode] = useState<Mode>('file')
   const [kind, setKind] = useState<Kind>('therapy_session')
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [names, setNames] = useState('')
   const [text, setText] = useState('')
+  const [testData, setTestData] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<ApiFailure | Error | null>(null)
 
-  function chooseMode(next: 'file' | 'text') {
+  function chooseMode(next: Mode) {
     setMode(next)
-    setKind(next === 'text' ? 'journal' : 'therapy_session')
+    setKind(MODE_KINDS[next])
+    setError(null)
+  }
+
+  async function readJsonFile(chosen: File | null) {
+    if (chosen) setTestData(await chosen.text())
   }
 
   async function submit(event: FormEvent) {
@@ -39,6 +52,17 @@ export default function UploadForm() {
         .filter(Boolean),
     }
     try {
+      if (mode === 'test') {
+        let blob: Record<string, unknown>
+        try {
+          blob = JSON.parse(testData) as Record<string, unknown>
+        } catch {
+          throw new Error('That is not valid JSON.')
+        }
+        const created = unwrap(await api.POST('/api/v1/sources', { body: { ...common, test_data: blob } }))
+        navigate(`/sources/${created.source.id}`)
+        return
+      }
       if (mode === 'text') {
         const created = unwrap(await api.POST('/api/v1/sources', { body: { ...common, text } }))
         navigate(`/sources/${created.source.id}`)
@@ -79,6 +103,10 @@ export default function UploadForm() {
           <input type="radio" checked={mode === 'text'} onChange={() => chooseMode('text')} />
           Text
         </label>
+        <label className="inline">
+          <input type="radio" checked={mode === 'test'} onChange={() => chooseMode('test')} />
+          Test data
+        </label>
       </div>
       {mode === 'file' && (
         <label>
@@ -100,7 +128,36 @@ export default function UploadForm() {
         Date it happened
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
       </label>
-      {mode === 'file' ? (
+      {mode === 'test' && (
+        <>
+          <p className="muted">
+            Concepts by type as JSON arrays (<code>person</code>, <code>feeling</code>, <code>belief</code>…), with
+            optional <code>relationships</code>. Nothing is sent to a model. A full example is in{' '}
+            <code>evals/fixtures/synthetic/test_data.example.json</code>.
+          </p>
+          <label>
+            JSON file (optional)
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={(e) => readJsonFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          <label>
+            Test data
+            <textarea
+              value={testData}
+              onChange={(e) => setTestData(e.target.value)}
+              rows={10}
+              placeholder={TEST_DATA_HINT}
+              spellCheck={false}
+              className="code"
+              required
+            />
+          </label>
+        </>
+      )}
+      {mode === 'test' ? null : mode === 'file' ? (
         <>
           <label>
             Audio or video file

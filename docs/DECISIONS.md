@@ -173,3 +173,15 @@ Entry format:
 - Reason: Owner's instruction. Staying on the same library avoids a second rewrite; `react-force-graph-2d` draws on a 2D canvas and would lose the additive glow.
 - Alternatives considered: Switching to `react-force-graph-2d`.
 - Approved by owner: yes (requested)
+
+## D-020 (2026-11-26) Test data can be uploaded as JSON
+- Context: The owner asked for a way to upload test data as a JSON blob with arrays such as `person` and `feeling`, to fill the atlas without recordings or a model.
+- Decision: `POST /sources` accepts `test_data`, and the upload form has a "Test data" mode. The blob has one array per core concept type, plus optional `relationships`; the format and its checks are in `backend/atlas/pipeline/test_data.py` and a full example is `evals/fixtures/synthetic/test_data.example.json`. It becomes an ordinary source with a new `import` pipeline stage run by the worker:
+  - Every item gets statements and evidence, generated when no `quotes` are given, so each one still traces to a quote and computed fields still come from evidence. `status` chooses the voice: `stated` is the owner speaking, `observed` the therapist, `hypothesis` an implied link. `count` sets how many statements back it.
+  - The blob is checked against the vocabulary before anything is stored: kinds, type-specific fields, relationship endpoints, and the diagnosis rule (a diagnosis cannot be a hypothesis).
+  - Names match existing concepts by exact name or alias, so a blob can extend the atlas. "me" is the owner.
+  - Retracting the source removes everything it added; "Extract again" re-runs the import.
+- Reason: Owner's instruction. Going through a source and the worker keeps design rules 3 and 4 and the rule that only the worker writes to the atlas.
+- Not changed: the vocabulary. A test-data source is stored with the existing kind `archive` and `metadata.test_data = true`, because adding a `test_data` source kind is a vocabulary change that needs the owner's approval. Say the word and it becomes its own kind.
+- Alternatives considered: Inserting nodes directly with no evidence; rejected because nodes without evidence are retracted by the rules and would break click-through.
+- Approved by owner: yes (requested)

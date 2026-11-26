@@ -21,6 +21,7 @@ export const STAGE_LABELS: Record<string, string> = {
   media: 'Prepare audio',
   transcribe: 'Transcribe',
   segment_text: 'Read text',
+  import: 'Import test data',
   speakers: 'Identify voices',
   statements: 'Extract statements',
   concepts: 'Extract concepts',

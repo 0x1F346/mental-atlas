@@ -609,6 +609,10 @@ export interface components {
              * Format: date-time
              */
             occurred_at: string;
+            /** Test Data */
+            test_data?: {
+                [key: string]: unknown;
+            } | null;
             /** Text */
             text?: string | null;
             /** Title */
@@ -695,7 +699,7 @@ export interface components {
          * Stage
          * @enum {string}
          */
-        Stage: "media" | "transcribe" | "segment_text" | "speakers" | "statements" | "concepts" | "commit" | "embed" | "place";
+        Stage: "media" | "transcribe" | "segment_text" | "import" | "speakers" | "statements" | "concepts" | "commit" | "embed" | "place";
         /** StageOut */
         StageOut: {
             /** Error */

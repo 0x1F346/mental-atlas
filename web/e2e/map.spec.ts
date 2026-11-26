@@ -54,3 +54,32 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   await quote.getByRole('link', { name: 'In the transcript' }).click()
   await expect(page.locator('.segment.target')).toContainText('my stomach has been in knots')
 })
+
+test('test data uploaded as JSON appears on the map', async ({ page }) => {
+  const blob = readFileSync(path.resolve(here, '../../evals/fixtures/synthetic/test_data.example.json'), 'utf8')
+  await signIn(page)
+  await page.getByRole('link', { name: 'Sources' }).click()
+  await page.getByRole('radio', { name: 'Test data' }).check()
+  await page.getByLabel('Title').fill(`${TITLE_PREFIX}test data`)
+  await page.getByRole('textbox', { name: 'Test data' }).fill(blob)
+  await page.getByRole('button', { name: 'Add' }).click()
+  await expect(page.getByTestId('source-status')).toHaveText('Ready', { timeout: 60_000 })
+
+  await page.getByRole('link', { name: 'Open the map' }).click()
+  const landmark = page.getByRole('button', { name: /^Belief: I am not good enough for this job/ })
+  await landmark.focus()
+  await page.keyboard.press('Enter')
+  const panel = page.getByRole('complementary', { name: 'Evidence' })
+  await expect(panel.getByRole('heading', { name: 'I am not good enough for this job' })).toBeVisible()
+  await expect(panel.getByRole('region', { name: 'Related' })).toContainText('Held by')
+})
+
+test('invalid test data is refused with the place at fault', async ({ page }) => {
+  await signIn(page)
+  await page.getByRole('link', { name: 'Sources' }).click()
+  await page.getByRole('radio', { name: 'Test data' }).check()
+  await page.getByLabel('Title').fill(`${TITLE_PREFIX}bad test data`)
+  await page.getByRole('textbox', { name: 'Test data' }).fill('{"trait": ["persistence"]}')
+  await page.getByRole('button', { name: 'Add' }).click()
+  await expect(page.getByRole('alert')).toContainText('trait.0.kind is required')
+})

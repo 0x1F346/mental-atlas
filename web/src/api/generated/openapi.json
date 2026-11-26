@@ -903,6 +903,18 @@
             "title": "Occurred At",
             "type": "string"
           },
+          "test_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Data"
+          },
           "text": {
             "anyOf": [
               {
@@ -1159,6 +1171,7 @@
           "media",
           "transcribe",
           "segment_text",
+          "import",
           "speakers",
           "statements",
           "concepts",
