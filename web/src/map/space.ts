@@ -63,44 +63,60 @@ export function recentIds(landmarks: Landmark[]): Set<string> {
 }
 
 /** The shape a landmark is drawn with. Types not listed here are round points. */
-export type StarShape = 'point' | 'heart'
-export const TYPE_SHAPES: Partial<Record<NodeType, StarShape>> = { person: 'heart' }
+export type StarShape = 'point' | 'star' | 'heart'
+export const TYPE_SHAPES: Partial<Record<NodeType, StarShape>> = { person: 'star' }
 
 export function shapeOf(type: NodeType): StarShape {
   return TYPE_SHAPES[type] ?? 'point'
 }
 
-let heartTexture: Texture | null = null
+function tracePath(context: CanvasRenderingContext2D, shape: 'star' | 'heart') {
+  context.beginPath()
+  if (shape === 'heart') {
+    context.moveTo(64, 96)
+    context.bezierCurveTo(20, 66, 28, 34, 48, 34)
+    context.bezierCurveTo(57, 34, 62, 40, 64, 46)
+    context.bezierCurveTo(66, 40, 71, 34, 80, 34)
+    context.bezierCurveTo(100, 34, 108, 66, 64, 96)
+  } else {
+    // A five-pointed star, point up.
+    for (let i = 0; i < 10; i += 1) {
+      const radius = i % 2 === 0 ? 36 : 15
+      const angle = -Math.PI / 2 + (i * Math.PI) / 5
+      const x = 64 + radius * Math.cos(angle)
+      const y = 66 + radius * Math.sin(angle)
+      if (i === 0) context.moveTo(x, y)
+      else context.lineTo(x, y)
+    }
+  }
+  context.closePath()
+}
 
-/** A glowing heart, white so the material's colour tints it like the round glow. */
-function heart(): Texture {
-  if (heartTexture) return heartTexture
+const shapeTextures = new Map<string, Texture>()
+
+/** A glowing shape, white so the material's colour tints it like the round glow. */
+function shaped(shape: 'star' | 'heart'): Texture {
+  const cached = shapeTextures.get(shape)
+  if (cached) return cached
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = 128
   const context = canvas.getContext('2d')
   if (context) {
-    const path = () => {
-      context.beginPath()
-      context.moveTo(64, 96)
-      context.bezierCurveTo(20, 66, 28, 34, 48, 34)
-      context.bezierCurveTo(57, 34, 62, 40, 64, 46)
-      context.bezierCurveTo(66, 40, 71, 34, 80, 34)
-      context.bezierCurveTo(100, 34, 108, 66, 64, 96)
-      context.closePath()
-    }
-    // A soft halo first, then the solid heart on top.
+    context.lineJoin = 'round'
+    // A soft halo first, then the solid shape on top.
     context.shadowColor = 'rgba(255,255,255,0.9)'
     context.shadowBlur = 22
     context.fillStyle = 'rgba(255,255,255,0.55)'
-    path()
+    tracePath(context, shape)
     context.fill()
     context.shadowBlur = 6
     context.fillStyle = 'rgba(255,255,255,1)'
-    path()
+    tracePath(context, shape)
     context.fill()
   }
-  heartTexture = new CanvasTexture(canvas)
-  return heartTexture
+  const texture = new CanvasTexture(canvas)
+  shapeTextures.set(shape, texture)
+  return texture
 }
 
 let glowTexture: Texture | null = null
@@ -160,10 +176,10 @@ export interface Star {
 
 export function makeStar(mark: Landmark, recent: boolean): Star {
   const shape = shapeOf(mark.type)
-  // A heart fills less of its texture than a round glow, so it is drawn a little larger.
-  const size = glowSize(mark.evidence_count) * (shape === 'heart' ? 1.25 : 1)
+  // A drawn shape fills less of its texture than a round glow, so it is drawn a little larger.
+  const size = glowSize(mark.evidence_count) * (shape === 'point' ? 1 : 1.25)
   const material = new SpriteMaterial({
-    map: shape === 'heart' ? heart() : glow(),
+    map: shape === 'point' ? glow() : shaped(shape),
     color: AREA_COLOURS[mark.life_area],
     blending: AdditiveBlending,
     transparent: true,

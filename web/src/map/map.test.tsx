@@ -197,8 +197,8 @@ test('size grows with evidence, colour follows life area, and recent landmarks a
   expect(glowSize(9)).toBeGreaterThan(glowSize(1))
   expect(glowSize(10_000)).toBeLessThanOrEqual(90)
   expect(new Set(Object.values(AREA_COLOURS)).size).toBe(6)
-  // People are hearts; every other type is a round point.
-  expect(shapeOf('person')).toBe('heart')
+  // People are stars; every other type is a round point.
+  expect(shapeOf('person')).toBe('star')
   expect(shapeOf('feeling')).toBe('point')
   expect(shapeOf('group')).toBe('point')
   expect(toSpace(500, 500)).toEqual({ x: 0, y: 0 })
