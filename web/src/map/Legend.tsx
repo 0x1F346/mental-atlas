@@ -15,7 +15,7 @@ export default function Legend() {
       </ul>
       <p>Bigger means more evidence. A pulse means seen recently.</p>
       <p>A dim flicker is a hypothesis: nobody has said it directly.</p>
-      <p>Hearts are people. Select a point to see what it is linked to.</p>
+      <p>Stars are people. Select a point to see what it is linked to.</p>
       <p>Drag to move, scroll to zoom.</p>
     </details>
   )

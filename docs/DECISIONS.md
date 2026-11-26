@@ -185,3 +185,10 @@ Entry format:
 - Not changed: the vocabulary. A test-data source is stored with the existing kind `archive` and `metadata.test_data = true`, because adding a `test_data` source kind is a vocabulary change that needs the owner's approval. Say the word and it becomes its own kind.
 - Alternatives considered: Inserting nodes directly with no evidence; rejected because nodes without evidence are retracted by the rules and would break click-through.
 - Approved by owner: yes (requested)
+
+## D-021 (2026-11-26) People are drawn as stars
+- Context: D-019 drew Person nodes as hearts. The owner asked for stars instead.
+- Decision: `TYPE_SHAPES` in `web/src/map/space.ts` maps `person` to `star`, a five-pointed star with the same glow, tint and sizing. The heart is kept as an available shape, unused.
+- Reason: Owner's instruction.
+- Alternatives considered: None.
+- Approved by owner: yes (requested)
