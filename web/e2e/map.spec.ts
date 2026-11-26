@@ -31,14 +31,12 @@ test('from uploaded text to a quote on the map', async ({ page }, testInfo) => {
   await expect(page.getByTestId('source-status')).toHaveText('Ready', { timeout: 60_000 })
 
   await page.getByRole('link', { name: 'Open the map' }).click()
-  await expect(page.getByRole('group', { name: 'Map of your atlas' })).toBeVisible()
-  for (const region of ['Love', 'Family', 'Friendships', 'Work', 'Body and health', 'Self']) {
-    await expect(page.locator('.region-name', { hasText: new RegExp(`^${region}$`) })).toBeVisible()
-  }
-
+  // The map is a WebGL canvas; the same landmarks are mirrored as buttons for the keyboard.
+  await expect(page.locator('.map-frame.space canvas')).toBeVisible()
   const landmark = page.getByRole('button', { name: /^Sensation: stomach in knots/ })
-  await expect(landmark).toBeVisible()
-  await landmark.click()
+  await landmark.focus()
+  await page.keyboard.press('Enter')
+  await expect(landmark).toHaveAttribute('aria-pressed', 'true')
 
   const panel = page.getByRole('complementary', { name: 'Evidence' })
   await expect(panel.getByRole('heading', { name: 'stomach in knots' })).toBeVisible()
