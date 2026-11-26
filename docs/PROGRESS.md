@@ -3,7 +3,8 @@
 ## Now
 - Milestone: M6 First real session
 - Current task: waiting for the owner (see "Needs the owner")
-- Next step: The owner runs `make smoke` and `make eval`; prompts and thresholds are then tuned against the result.
+- Design restyle (D-023, D-024, D-025): done on branch `design/living-tissue`, four commits plus a queue fix, not yet merged. `make e2e` has not been run on it; it waits for the owner to stop a leftover worker (see Known issues).
+- Next step: Run `make e2e` on the design branch and merge it. Then the owner runs `make smoke` and `make eval`; prompts and thresholds are then tuned against the result.
 - Blocked on: the owner. Every remaining step needs a paid live call, real data or a decision.
 
 ## Needs the owner
@@ -38,6 +39,11 @@ In order. Nothing below has been done.
 Done when the owner can open any item on the map and read the quotes behind it. That is the V1 exit.
 
 ## Milestone reports
+### Design restyle after M5 (2026-11-26), branch `design/living-tissue`
+- The web app takes the "living tissue" design from `docs/design/` (D-023): tokens and self-hosted fonts, top bar, evidence panel, sources pages, and an SVG map renderer that supersedes D-018, D-019, D-021 and D-022 (D-024). What the restyle left out is in D-025.
+- Verified: `make verify` (188 backend, 18 web tests). Looked at by eye in headless Chromium at 1440×900 and 390×844 against the development atlas (136 invented concepts): the map fitted, zoomed to 196% and with a landmark selected; the panel; the sources list and an open source.
+- Not verified: `make e2e` on this branch (it was updated for the new renderer but not run); a timed transcript and the "Opened from the atlas" highlight by eye; a real GPU-less low-end machine; screen readers.
+
 ### Map renderer replaced after M5 (2026-11-25)
 - The SVG map was replaced by a WebGL force-directed graph at the owner's request (D-018). `make verify` and `make e2e` pass with it. Checked by eye in headless Chromium with software rendering; not on a real GPU.
 
@@ -76,6 +82,14 @@ Done when the owner can open any item on the map and read the quotes behind it. 
 - Not checked: a literal fresh clone. CI passed on `main` for the M1, M2 and M3 merges; later runs were not checked when this was written.
 
 ## Session log (newest first, keep the last 10)
+### 2026-11-26
+- Done: the design restyle in four commits on `design/living-tissue` (tokens, fonts and top bar; evidence panel; sources pages; SVG map renderer). Decisions D-023, D-024, D-025. The owner approved superseding D-018, D-019, D-021 and D-022 and answered the brief's open questions: fonts self-hosted, no "soon" labels, an icon for every type with a shared colour for the eleven minor ones, six type chips plus "More", "Inferred" kept.
+- Also fixed: jobs were queued with the host clock but claimed against the database clock, so with Docker's clock about 2 ms behind, `drain()` stopped early and 14 to 18 pipeline tests failed. `run_after` now comes from the database clock, with a regression test. This is the likely cause of the intermittent failure listed under Known issues before.
+- Corrected: PROGRESS.md did not mention D-019 to D-022, which git shows were merged on 2026-11-26; they are now superseded by D-024.
+- Verified by: `make verify` before each commit (last run: 188 backend, 18 web tests, lint, types, generated-file check). Screenshots in headless Chromium.
+- Unfinished: `make e2e` on the branch; merging the branch into `main`.
+- Next: the owner stops the leftover worker, `make e2e` runs, the branch is merged. Then the owner's M6 steps.
+
 ### 2026-11-25
 - Done: M0-T1 to M0-T5, M1-T1 to M1-T7, M2-T1 to M2-T8, M3-T1 to M3-T8, M4-T1 to M4-T5, M5-T1 to M5-T5, M6-T2, and the fixes from an independent backend review. Decisions D-001 to D-017. This was one unattended session across all milestones, which the owner authorised (D-003); the plan's one-milestone-per-session rule was not followed.
 - Verified by: `make verify` (168 backend tests, 13 web tests, lint, types, generated-file check, all passed), `make e2e` (3 passed), `make eval-fake` (every target met), `make restore-check` (passed).
@@ -87,9 +101,11 @@ Done when the owner can open any item on the map and read the quotes behind it. 
 - No prompt, and neither provider adapter, has been run against a live service (D-010, D-011, D-015).
 - No embedding provider is configured (D-014); similarity matching uses a local word-hash embedder.
 - `docs/plan/IMPLEMENTATION_PLAN.md` is a text extract of the PDF, not the owner's Markdown export (D-002).
-- `test_a_failed_stage_is_recorded_and_can_be_retried_alone` failed once in about twenty runs and passed on every rerun. Cause unknown; the assertion now reports what each stage did.
+- `test_a_failed_stage_is_recorded_and_can_be_retried_alone` failed once in about twenty runs before 2026-11-26. Probably the queue clock bug fixed that day (jobs queued on the host clock, claimed on the database clock); not seen since, but not proven.
+- A worker started on 2026-11-25 from an earlier session (PID 49810) was still running on 2026-11-26, with code from before D-020 and the providers named in the local env file. Claude Code was not allowed to stop it. Stop it before `make e2e`, or its jobs may run on old code or live providers.
 - Audio playback from a quote has only been exercised through component tests, not with a real recording in a browser.
 - The map has room for a few hundred landmarks at the current spacing. Beyond that, placement falls back to overlapping positions, and it will need a spacing or zoom-level change in phase 2.
+- On a phone, selecting a landmark with many relationships labels every neighbour, which crowds the small map. Phones were not in the design.
 - An undated event mentioned again in a later source becomes a second node (D-013, rule 6).
 - The Bash deny rules in `.claude/settings.json` block any shell command whose text names the local env file or `data/`, including heredocs. Write such files with the editor tools.
 - Points left open by the backend review are listed in D-017.

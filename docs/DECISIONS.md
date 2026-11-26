@@ -227,3 +227,14 @@ Entry format:
 - Not verified: frame rate with several hundred landmarks on a slow machine; screen-reader behaviour beyond names and roles.
 - Alternatives considered: restoring the pre-D-018 `SvgMapRenderer.tsx` from git as a base. Its structure (d3-zoom over SVG) was kept, but drawing landmarks as HTML buttons was simpler for the counter-scaled orbs and labels.
 - Approved by owner: yes (requested; questions answered 2026-11-26)
+
+## D-025 (2026-11-26) Evidence panel and sources pages: what the restyle kept and left out
+- Context: The design brief asks for the evidence panel and sources pages to be restyled, not rebuilt, with no change to the API. The mockups show some things the API does not provide.
+- Decision:
+  - Quotes in the panel are listed newest first. The API still returns them oldest first; the panel sorts by `said_at`, keeping the API order for ties. The link reads "Open in transcript". The section heading stays "Quotes", since the panel itself is labelled "Evidence". "Said directly" or "Implied" is still shown on each quote, which the mockup leaves out.
+  - Sources is one layout with two columns: the list and upload form on the left, the open source on the right. `/sources` and `/sources/:sourceId` stay separate routes, nested under it. On phones the open source comes first.
+  - Processing steps are the source's runs; once a source is ready they fold under "How it was processed". A transcript with no timings (text, test data) has no time column.
+  - Not built, because each needs new API data: the audio player with the speaker timeline, concept chips under transcript lines, highlighted quote spans in the transcript, "38 items drawn into the atlas" counts, and the "Show more quotes" control. The upload card does not accept dropped files; its heading does not claim it does.
+- Reason: The brief keeps callers and endpoints unchanged; anything needing an endpoint change is for the owner to ask for.
+- Alternatives considered: Adding a per-segment concepts endpoint for the transcript chips.
+- Approved by owner: not needed (within the approved restyle; the left-out items are listed for the owner)
