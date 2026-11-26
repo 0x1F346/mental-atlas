@@ -13,7 +13,7 @@ import {
   type Texture,
 } from 'three'
 
-import type { LifeArea } from '../api/generated/vocabulary'
+import type { LifeArea, NodeType } from '../api/generated/vocabulary'
 import type { Landmark } from './types'
 
 export const SPACE_BACKGROUND = '#04050c'
@@ -60,6 +60,47 @@ export function recentIds(landmarks: Landmark[]): Set<string> {
       .filter((mark) => !mark.is_self && mark.last_seen_at && Date.parse(mark.last_seen_at) >= cutoff)
       .map((mark) => mark.id),
   )
+}
+
+/** The shape a landmark is drawn with. Types not listed here are round points. */
+export type StarShape = 'point' | 'heart'
+export const TYPE_SHAPES: Partial<Record<NodeType, StarShape>> = { person: 'heart' }
+
+export function shapeOf(type: NodeType): StarShape {
+  return TYPE_SHAPES[type] ?? 'point'
+}
+
+let heartTexture: Texture | null = null
+
+/** A glowing heart, white so the material's colour tints it like the round glow. */
+function heart(): Texture {
+  if (heartTexture) return heartTexture
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 128
+  const context = canvas.getContext('2d')
+  if (context) {
+    const path = () => {
+      context.beginPath()
+      context.moveTo(64, 96)
+      context.bezierCurveTo(20, 66, 28, 34, 48, 34)
+      context.bezierCurveTo(57, 34, 62, 40, 64, 46)
+      context.bezierCurveTo(66, 40, 71, 34, 80, 34)
+      context.bezierCurveTo(100, 34, 108, 66, 64, 96)
+      context.closePath()
+    }
+    // A soft halo first, then the solid heart on top.
+    context.shadowColor = 'rgba(255,255,255,0.9)'
+    context.shadowBlur = 22
+    context.fillStyle = 'rgba(255,255,255,0.55)'
+    path()
+    context.fill()
+    context.shadowBlur = 6
+    context.fillStyle = 'rgba(255,255,255,1)'
+    path()
+    context.fill()
+  }
+  heartTexture = new CanvasTexture(canvas)
+  return heartTexture
 }
 
 let glowTexture: Texture | null = null
@@ -118,9 +159,11 @@ export interface Star {
 }
 
 export function makeStar(mark: Landmark, recent: boolean): Star {
-  const size = glowSize(mark.evidence_count)
+  const shape = shapeOf(mark.type)
+  // A heart fills less of its texture than a round glow, so it is drawn a little larger.
+  const size = glowSize(mark.evidence_count) * (shape === 'heart' ? 1.25 : 1)
   const material = new SpriteMaterial({
-    map: glow(),
+    map: shape === 'heart' ? heart() : glow(),
     color: AREA_COLOURS[mark.life_area],
     blending: AdditiveBlending,
     transparent: true,
@@ -156,12 +199,8 @@ export interface StarState {
 export function animateStar(star: Star, state: StarState, seconds: number, still: boolean): void {
   const t = still ? 0 : seconds
   const { phase } = star
-  // Ambient drift: a slow wander around the landmark's place.
-  star.glow.position.set(
-    Math.sin(t * 0.41 + phase) * 2.4,
-    Math.cos(t * 0.33 + phase * 1.7) * 2.4,
-    Math.sin(t * 0.27 + phase * 0.6) * 2.4,
-  )
+  // Ambient drift: a slow wander around the landmark's place, within the plane.
+  star.glow.position.set(Math.sin(t * 0.41 + phase) * 2.4, Math.cos(t * 0.33 + phase * 1.7) * 2.4, 0)
   // Recently seen landmarks pulse.
   let scale = star.recent && !still ? 1 + 0.2 * Math.sin(t * 2.3 + phase) : 1
   if (state.selected) scale *= 1.45

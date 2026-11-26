@@ -6,7 +6,7 @@ import { prominentIds } from './appearance'
 import EvidencePanel from './EvidencePanel'
 import ForceGraphRenderer from './ForceGraphRenderer'
 import { hiddenLandmarks } from './MapPage'
-import { AREA_COLOURS, glowSize, recentIds, seeded, toSpace } from './space'
+import { AREA_COLOURS, glowSize, recentIds, seeded, shapeOf, toSpace } from './space'
 import type { Evidence, EvidenceItem, Landmark, MapDocument, NodeDetail } from './types'
 
 // jsdom has no WebGL: the graph library is replaced by a stub that records its props.
@@ -95,6 +95,10 @@ interface StubNode {
   well: { x: number; y: number }
 }
 
+function nodesAreFlat() {
+  return graphData().nodes.every((node) => node.z === 0 && node.home.z === 0)
+}
+
 function graphData() {
   return graphProps.current?.graphData as {
     nodes: StubNode[]
@@ -106,6 +110,8 @@ test('every landmark is a node seeded from its map position, in a dark space', (
   renderMap()
   expect(screen.getByTestId('force-graph')).toBeInTheDocument()
   expect(graphProps.current?.backgroundColor).toBe('#04050c')
+  expect(graphProps.current?.numDimensions).toBe(2)
+  expect(nodesAreFlat()).toBe(true)
   const { nodes, links } = graphData()
   expect(nodes.map((node) => node.id)).toEqual(['dread', 'shame', 'found out'])
   const dread = nodes[0]
@@ -191,6 +197,10 @@ test('size grows with evidence, colour follows life area, and recent landmarks a
   expect(glowSize(9)).toBeGreaterThan(glowSize(1))
   expect(glowSize(10_000)).toBeLessThanOrEqual(90)
   expect(new Set(Object.values(AREA_COLOURS)).size).toBe(6)
+  // People are hearts; every other type is a round point.
+  expect(shapeOf('person')).toBe('heart')
+  expect(shapeOf('feeling')).toBe('point')
+  expect(shapeOf('group')).toBe('point')
   expect(toSpace(500, 500)).toEqual({ x: 0, y: 0 })
   expect(seeded('abc')).toBe(seeded('abc'))
   expect(seeded('abc')).not.toBe(seeded('abd'))

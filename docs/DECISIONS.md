@@ -166,3 +166,10 @@ Entry format:
 - Not verified: frame rate with hundreds of landmarks, and rendering on a real GPU. It was looked at in headless Chromium with software rendering only.
 - Alternatives considered: `react-force-graph-2d`, which draws on a 2D canvas and is not WebGL.
 - Approved by owner: yes (requested)
+
+## D-019 (2026-11-26) The map is flat, and node shape depends on concept type
+- Context: The owner asked for the graph to be 2D instead of 3D, and for Person nodes to be small hearts.
+- Decision: The force simulation runs in two dimensions (`numDimensions={2}`) and the view cannot be turned: dragging moves it and the wheel zooms. It is still drawn with WebGL through `react-force-graph-3d`, which keeps the glow, the particles and the camera ease from D-018. Node shape comes from `TYPE_SHAPES` in `web/src/map/space.ts`: `person` is a heart and every other type is a round point. Adding a shape for another type is one entry there plus a texture.
+- Reason: Owner's instruction. Staying on the same library avoids a second rewrite; `react-force-graph-2d` draws on a 2D canvas and would lose the additive glow.
+- Alternatives considered: Switching to `react-force-graph-2d`.
+- Approved by owner: yes (requested)
